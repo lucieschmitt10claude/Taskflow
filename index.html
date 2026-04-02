@@ -110,34 +110,34 @@ const emptyTaskForm = () => ({ title: "", note: "", checklist: [], newCheckItem:
 /* ─── THEMES ─── */
 const THEMES = {
   light: {
-    bg: "#F7F7FA", card: "#fff", text: "#1A1A2E", textSoft: "rgba(0,0,0,0.5)", textMuted: "rgba(0,0,0,0.35)",
-    textFaint: "rgba(0,0,0,0.2)", textGhost: "rgba(0,0,0,0.12)", border: "rgba(0,0,0,0.04)", borderMed: "rgba(0,0,0,0.07)",
-    borderStrong: "rgba(0,0,0,0.09)", headerBg: "#fff", headerBorder: "rgba(0,0,0,0.05)",
-    btnPrimBg: "#1A1A2E", btnPrimText: "#fff", btnGhostBg: "rgba(0,0,0,0.04)", btnGhostText: "rgba(0,0,0,0.5)",
-    inputBg: "rgba(0,0,0,0.025)", inputText: "#1A1A2E", modalBg: "#fff", modalOverlay: "rgba(0,0,0,0.35)",
-    kanbanBg: "rgba(0,0,0,0.018)", cardShadow: "0 1px 4px rgba(0,0,0,0.04)", cardHover: "0 4px 16px rgba(0,0,0,0.07)",
-    pieBg: "rgba(0,0,0,0.03)", pieStroke: "#F7F7FA", pieText: "rgba(0,0,0,0.55)", pieSub: "rgba(0,0,0,0.3)",
-    checkBg: "#fff", checkBorder: "rgba(0,0,0,0.12)", checkDoneBg: "rgba(76,175,125,0.04)", checkDoneBorder: "rgba(76,175,125,0.12)",
-    sectionBg: "rgba(0,0,0,0.012)", sectionBorder: "rgba(0,0,0,0.04)",
-    noteBg: "rgba(0,0,0,0.38)", tagBg: "rgba(0,0,0,0.04)", tagText: "rgba(0,0,0,0.3)",
-    toolTagBg: "rgba(100,100,140,0.06)", toolTagText: "rgba(60,60,90,0.5)",
-    focusShadow: "0 0 0 3px rgba(26,26,46,0.06)", focusBorder: "#1A1A2E",
-    dotTodo: "rgba(100,100,140,0.45)", dotDoing: "#E8A838", dotDone: "#4CAF7D",
+    bg: "#D5D5E0", card: "#fff", text: "#111122", textSoft: "rgba(0,0,0,0.7)", textMuted: "rgba(0,0,0,0.55)",
+    textFaint: "rgba(0,0,0,0.4)", textGhost: "rgba(0,0,0,0.2)", border: "rgba(0,0,0,0.18)", borderMed: "rgba(0,0,0,0.22)",
+    borderStrong: "rgba(0,0,0,0.28)", headerBg: "#fff", headerBorder: "rgba(0,0,0,0.18)",
+    btnPrimBg: "#1A1A2E", btnPrimText: "#fff", btnGhostBg: "rgba(0,0,0,0.08)", btnGhostText: "rgba(0,0,0,0.7)",
+    inputBg: "#fff", inputText: "#111122", modalBg: "#fff", modalOverlay: "rgba(0,0,0,0.5)",
+    kanbanBg: "rgba(0,0,0,0.06)", cardShadow: "0 2px 10px rgba(0,0,0,0.12)", cardHover: "0 8px 24px rgba(0,0,0,0.18)",
+    pieBg: "rgba(0,0,0,0.08)", pieStroke: "#D5D5E0", pieText: "rgba(0,0,0,0.75)", pieSub: "rgba(0,0,0,0.5)",
+    checkBg: "#fff", checkBorder: "rgba(0,0,0,0.28)", checkDoneBg: "rgba(76,175,125,0.12)", checkDoneBorder: "rgba(76,175,125,0.3)",
+    sectionBg: "rgba(0,0,0,0.04)", sectionBorder: "rgba(0,0,0,0.15)",
+    noteBg: "rgba(0,0,0,0.55)", tagBg: "rgba(0,0,0,0.1)", tagText: "rgba(0,0,0,0.5)",
+    toolTagBg: "rgba(100,100,140,0.14)", toolTagText: "rgba(50,50,80,0.7)",
+    focusShadow: "0 0 0 3px rgba(26,26,46,0.15)", focusBorder: "#1A1A2E",
+    dotTodo: "rgba(80,80,130,0.7)", dotDoing: "#D4940A", dotDone: "#3A9465",
   },
   dark: {
-    bg: "#0F0F14", card: "#1A1A24", text: "#E8E8F0", textSoft: "rgba(255,255,255,0.55)", textMuted: "rgba(255,255,255,0.35)",
-    textFaint: "rgba(255,255,255,0.2)", textGhost: "rgba(255,255,255,0.08)", border: "rgba(255,255,255,0.06)", borderMed: "rgba(255,255,255,0.1)",
-    borderStrong: "rgba(255,255,255,0.12)", headerBg: "#15151E", headerBorder: "rgba(255,255,255,0.06)",
-    btnPrimBg: "#6C63FF", btnPrimText: "#fff", btnGhostBg: "rgba(255,255,255,0.06)", btnGhostText: "rgba(255,255,255,0.55)",
-    inputBg: "rgba(255,255,255,0.05)", inputText: "#E8E8F0", modalBg: "#1E1E2A", modalOverlay: "rgba(0,0,0,0.6)",
-    kanbanBg: "rgba(255,255,255,0.02)", cardShadow: "0 1px 4px rgba(0,0,0,0.2)", cardHover: "0 4px 16px rgba(0,0,0,0.3)",
-    pieBg: "rgba(255,255,255,0.04)", pieStroke: "#0F0F14", pieText: "rgba(255,255,255,0.6)", pieSub: "rgba(255,255,255,0.3)",
-    checkBg: "rgba(255,255,255,0.05)", checkBorder: "rgba(255,255,255,0.15)", checkDoneBg: "rgba(76,175,125,0.08)", checkDoneBorder: "rgba(76,175,125,0.2)",
-    sectionBg: "rgba(255,255,255,0.03)", sectionBorder: "rgba(255,255,255,0.06)",
-    noteBg: "rgba(255,255,255,0.4)", tagBg: "rgba(255,255,255,0.06)", tagText: "rgba(255,255,255,0.35)",
-    toolTagBg: "rgba(140,140,200,0.1)", toolTagText: "rgba(160,160,220,0.6)",
-    focusShadow: "0 0 0 3px rgba(108,99,255,0.15)", focusBorder: "#6C63FF",
-    dotTodo: "rgba(160,160,200,0.5)", dotDoing: "#E8A838", dotDone: "#4CAF7D",
+    bg: "#050508", card: "#1E1E30", text: "#F0F0F8", textSoft: "rgba(255,255,255,0.75)", textMuted: "rgba(255,255,255,0.55)",
+    textFaint: "rgba(255,255,255,0.3)", textGhost: "rgba(255,255,255,0.12)", border: "rgba(255,255,255,0.15)", borderMed: "rgba(255,255,255,0.2)",
+    borderStrong: "rgba(255,255,255,0.25)", headerBg: "#101018", headerBorder: "rgba(255,255,255,0.15)",
+    btnPrimBg: "#6C63FF", btnPrimText: "#fff", btnGhostBg: "rgba(255,255,255,0.1)", btnGhostText: "rgba(255,255,255,0.75)",
+    inputBg: "rgba(255,255,255,0.1)", inputText: "#F0F0F8", modalBg: "#181828", modalOverlay: "rgba(0,0,0,0.75)",
+    kanbanBg: "rgba(255,255,255,0.06)", cardShadow: "0 2px 10px rgba(0,0,0,0.4)", cardHover: "0 8px 24px rgba(0,0,0,0.5)",
+    pieBg: "rgba(255,255,255,0.08)", pieStroke: "#050508", pieText: "rgba(255,255,255,0.8)", pieSub: "rgba(255,255,255,0.5)",
+    checkBg: "rgba(255,255,255,0.1)", checkBorder: "rgba(255,255,255,0.25)", checkDoneBg: "rgba(76,175,125,0.15)", checkDoneBorder: "rgba(76,175,125,0.3)",
+    sectionBg: "rgba(255,255,255,0.05)", sectionBorder: "rgba(255,255,255,0.12)",
+    noteBg: "rgba(255,255,255,0.6)", tagBg: "rgba(255,255,255,0.1)", tagText: "rgba(255,255,255,0.55)",
+    toolTagBg: "rgba(140,140,200,0.2)", toolTagText: "rgba(170,170,230,0.8)",
+    focusShadow: "0 0 0 3px rgba(108,99,255,0.25)", focusBorder: "#6C63FF",
+    dotTodo: "rgba(160,160,200,0.7)", dotDoing: "#E8A838", dotDone: "#4CAF7D",
   }
 };
 
@@ -522,66 +522,144 @@ function ThemeToggle({ dark, onToggle }) {
 /* Theme context */
 const ThemeCtx = createContext(THEMES.light);
 
-/* ─── Pomodoro Timer ─── */
-function Pomodoro({ F }) {
+/* ─── Notes System (OneNote style) ─── */
+const NOTES_KEY = "taskflow-notes";
+function loadNotes() { try { const r = localStorage.getItem(NOTES_KEY); return r ? JSON.parse(r) : []; } catch { return []; } }
+function saveNotes(d) { try { localStorage.setItem(NOTES_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+
+/* Small widget on dashboard */
+function NotesWidget({ notes, onOpen, btnP, F }) {
   const T = useContext(ThemeCtx);
-  const [totalSec, setTotalSec] = useState(25 * 60);
-  const [remaining, setRemaining] = useState(25 * 60);
-  const [running, setRunning] = useState(false);
-  const [finished, setFinished] = useState(false);
-  const [inputMin, setInputMin] = useState("25");
-  const intervalRef = React.useRef(null);
+  return h("div", { style: { background: T.card, borderRadius: 16, padding: "16px 20px", border: "1px solid " + T.border, flex: "1 1 280px", minWidth: 200, transition: "background .3s", cursor: "pointer" }, onClick: onOpen },
+    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } },
+      h("div", { style: { fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" } }, "\uD83D\uDCCB Notes"),
+      h("button", { onClick: e => { e.stopPropagation(); onOpen(); }, style: { ...btnP, padding: "5px 10px", fontSize: 11 } }, "Ouvrir")
+    ),
+    notes.length === 0
+      ? h("div", { style: { fontSize: 12, color: T.textFaint, fontWeight: 600, padding: "8px 0" } }, "Aucune note - cliquez pour commencer")
+      : h("div", { style: { display: "flex", flexDirection: "column", gap: 3 } },
+          ...notes.slice(0, 5).map(n =>
+            h("div", { key: n.id, style: { display: "flex", alignItems: "center", gap: 6, padding: "4px 0" } },
+              h("span", { style: { fontSize: 12 } }, "\uD83D\uDCC4"),
+              h("span", { style: { fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, n.title),
+              n.subs.length > 0 && h("span", { style: { fontSize: 10, color: T.textFaint, fontWeight: 600 } }, "(" + n.subs.length + ")")
+            )
+          ),
+          notes.length > 5 && h("div", { style: { fontSize: 10, color: T.textFaint, fontWeight: 700, marginTop: 2 } }, "+" + (notes.length - 5) + " autres...")
+        )
+  );
+}
 
-  useEffect(() => {
-    if (!running) { if (intervalRef.current) clearInterval(intervalRef.current); return; }
-    intervalRef.current = setInterval(() => {
-      setRemaining(prev => {
-        if (prev <= 1) { clearInterval(intervalRef.current); setRunning(false); setFinished(true); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(intervalRef.current);
-  }, [running]);
+/* Full-page OneNote-style view */
+function NotesPage({ notes, persistN, btnP, btnG, inp, lbl, F }) {
+  const T = useContext(ThemeCtx);
+  const [activeNoteId, setActiveNoteId] = useState(notes.length > 0 ? notes[0].id : null);
+  const [activeSubId, setActiveSubId] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [addTitle, setAddTitle] = useState("");
+  const [addingSub, setAddingSub] = useState(false);
+  const [subTitle, setSubTitle] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editText, setEditText] = useState("");
 
-  const pct = totalSec > 0 ? ((totalSec - remaining) / totalSec) * 100 : 0;
-  const mm = Math.floor(remaining / 60);
-  const ss = remaining % 60;
-  const fmtR = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss;
+  const activeNote = notes.find(n => n.id === activeNoteId);
+  const activeSub = activeNote ? activeNote.subs.find(s => s.id === activeSubId) : null;
 
-  const applyTime = () => { const v = parseInt(inputMin); if (v > 0 && v <= 999) { setTotalSec(v * 60); setRemaining(v * 60); setFinished(false); } };
-  const start = () => { if (remaining > 0) { setFinished(false); setRunning(true); } };
-  const pause = () => setRunning(false);
-  const reset = () => { setRunning(false); setRemaining(totalSec); setFinished(false); };
+  const addNote = () => { if (!addTitle.trim()) return; const nn = { id: uid(), title: addTitle.trim(), content: "", subs: [] }; persistN([...notes, nn]); setActiveNoteId(nn.id); setActiveSubId(null); setAddTitle(""); setAdding(false); };
+  const deleteNote = (id) => { if (!confirm("Supprimer cette note ?")) return; const nn = notes.filter(n => n.id !== id); persistN(nn); if (activeNoteId === id) { setActiveNoteId(nn.length > 0 ? nn[0].id : null); setActiveSubId(null); } };
+  const renameNote = (id) => { if (!editText.trim()) return; persistN(notes.map(n => n.id === id ? { ...n, title: editText.trim() } : n)); setEditId(null); };
+  const updateNoteContent = (id, content) => persistN(notes.map(n => n.id === id ? { ...n, content } : n));
 
-  return h("div", { style: { background: T.card, borderRadius: 16, padding: "16px 20px", border: "1px solid " + T.border, flex: "1 1 200px", minWidth: 200, transition: "background .3s" } },
-    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } },
-      h("div", { style: { fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" } }, "\uD83C\uDF45 Pomodoro"),
-      !running && h("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
-        h("input", { type: "number", value: inputMin, onChange: e => setInputMin(e.target.value),
-          onKeyDown: e => { if (e.key === "Enter") applyTime(); },
-          onBlur: applyTime,
-          min: 1, max: 999,
-          style: { width: 44, padding: "4px 6px", borderRadius: 7, border: "1px solid " + T.borderStrong, background: T.inputBg, color: T.text, fontSize: 13, fontWeight: 800, fontFamily: F, textAlign: "center", outline: "none", boxSizing: "border-box" }
-        }),
-        h("span", { style: { fontSize: 11, fontWeight: 700, color: T.textMuted } }, "min")
+  const addSubNote = () => { if (!subTitle.trim() || !activeNote) return; const ns = { id: uid(), title: subTitle.trim(), content: "" }; persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: [...n.subs, ns] } : n)); setActiveSubId(ns.id); setSubTitle(""); setAddingSub(false); };
+  const deleteSubNote = (subId) => { persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: n.subs.filter(s => s.id !== subId) } : n)); if (activeSubId === subId) setActiveSubId(null); };
+  const renameSubNote = (subId) => { if (!editText.trim()) return; persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: n.subs.map(s => s.id === subId ? { ...s, title: editText.trim() } : s) } : n)); setEditId(null); };
+  const updateSubContent = (subId, content) => persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: n.subs.map(s => s.id === subId ? { ...s, content } : s) } : n));
+
+  const currentContent = activeSub ? activeSub.content : (activeNote ? activeNote.content : "");
+  const updateCurrentContent = (c) => { if (activeSub) updateSubContent(activeSub.id, c); else if (activeNote) updateNoteContent(activeNote.id, c); };
+
+  return h("div", { style: { display: "flex", gap: 0, height: "calc(100vh - 120px)", borderRadius: 18, overflow: "hidden", border: "1px solid " + T.border } },
+    /* Sidebar */
+    h("div", { style: { width: 240, flexShrink: 0, background: T.headerBg, borderRight: "1px solid " + T.border, display: "flex", flexDirection: "column", transition: "background .3s" } },
+      /* Sidebar header */
+      h("div", { style: { padding: "14px 12px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid " + T.border } },
+        h("div", { style: { fontSize: 14, fontWeight: 900, color: T.text } }, "\uD83D\uDCCB Notes"),
+        h("button", { onClick: () => setAdding(!adding), style: { background: T.btnPrimBg, color: T.btnPrimText, border: "none", borderRadius: 6, width: 28, height: 28, cursor: "pointer", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" } }, "+")
+      ),
+      adding && h("div", { style: { padding: "8px 10px", borderBottom: "1px solid " + T.border } },
+        h("input", { value: addTitle, onChange: e => setAddTitle(e.target.value), onKeyDown: e => { if (e.key === "Enter") addNote(); if (e.key === "Escape") setAdding(false); }, placeholder: "Nouvelle note...", autoFocus: true, style: { ...inp, padding: "7px 10px", fontSize: 12, marginBottom: 4 } }),
+        h("div", { style: { display: "flex", gap: 4 } },
+          h("button", { onClick: addNote, style: { ...btnP, padding: "5px 10px", fontSize: 11, flex: 1 } }, "Creer"),
+          h("button", { onClick: () => setAdding(false), style: { ...btnG, padding: "5px 10px", fontSize: 11 } }, "\u00D7")
+        )
+      ),
+      /* Notes list */
+      h("div", { style: { flex: 1, overflowY: "auto", padding: "4px 0" } },
+        ...notes.map(n =>
+          h("div", { key: n.id },
+            h("div", { onClick: () => { setActiveNoteId(n.id); setActiveSubId(null); }, style: {
+              display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer",
+              background: activeNoteId === n.id && !activeSubId ? T.kanbanBg : "transparent",
+              borderLeft: activeNoteId === n.id && !activeSubId ? "3px solid " + T.btnPrimBg : "3px solid transparent"
+            } },
+              h("span", { style: { fontSize: 14 } }, "\uD83D\uDCC4"),
+              editId === n.id
+                ? h("input", { value: editText, onChange: e => setEditText(e.target.value), onKeyDown: e => { if (e.key === "Enter") renameNote(n.id); if (e.key === "Escape") setEditId(null); }, onClick: e => e.stopPropagation(), autoFocus: true, style: { ...inp, flex: 1, padding: "3px 6px", fontSize: 12 } })
+                : h("span", { style: { flex: 1, fontSize: 13, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, n.title),
+              h("button", { onClick: e => { e.stopPropagation(); setEditId(n.id); setEditText(n.title); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 11, padding: "2px", opacity: 0.4 }, onMouseEnter: e => e.currentTarget.style.opacity = 1, onMouseLeave: e => e.currentTarget.style.opacity = 0.4 }, "\u270F"),
+              h("button", { onClick: e => { e.stopPropagation(); deleteNote(n.id); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 13, padding: "2px" }, onMouseEnter: e => e.currentTarget.style.color = "#D94F4F", onMouseLeave: e => e.currentTarget.style.color = T.textFaint }, "\u00D7")
+            ),
+            activeNoteId === n.id && n.subs.map(s =>
+              h("div", { key: s.id, onClick: () => setActiveSubId(s.id), style: {
+                display: "flex", alignItems: "center", gap: 6, padding: "7px 12px 7px 38px", cursor: "pointer",
+                background: activeSubId === s.id ? T.kanbanBg : "transparent",
+                borderLeft: activeSubId === s.id ? "3px solid " + T.dotDoing : "3px solid transparent"
+              } },
+                h("span", { style: { fontSize: 10, color: T.textFaint } }, "\u2514"),
+                editId === s.id
+                  ? h("input", { value: editText, onChange: e => setEditText(e.target.value), onKeyDown: e => { if (e.key === "Enter") renameSubNote(s.id); if (e.key === "Escape") setEditId(null); }, onClick: e => e.stopPropagation(), autoFocus: true, style: { ...inp, flex: 1, padding: "2px 6px", fontSize: 11 } })
+                  : h("span", { style: { flex: 1, fontSize: 12, fontWeight: 600, color: T.textSoft, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, s.title),
+                h("button", { onClick: e => { e.stopPropagation(); setEditId(s.id); setEditText(s.title); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 9, padding: "2px", opacity: 0.3 }, onMouseEnter: e => e.currentTarget.style.opacity = 1, onMouseLeave: e => e.currentTarget.style.opacity = 0.3 }, "\u270F"),
+                h("button", { onClick: e => { e.stopPropagation(); deleteSubNote(s.id); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 11, padding: "2px" }, onMouseEnter: e => e.currentTarget.style.color = "#D94F4F", onMouseLeave: e => e.currentTarget.style.color = T.textFaint }, "\u00D7")
+              )
+            ),
+            activeNoteId === n.id && h("div", { style: { padding: "3px 12px 8px 38px" } },
+              addingSub
+                ? h("div", { style: { display: "flex", gap: 3 } },
+                    h("input", { value: subTitle, onChange: e => setSubTitle(e.target.value), onKeyDown: e => { if (e.key === "Enter") addSubNote(); if (e.key === "Escape") setAddingSub(false); }, placeholder: "Sous-note...", autoFocus: true, style: { ...inp, flex: 1, padding: "3px 6px", fontSize: 11 } }),
+                    h("button", { onClick: addSubNote, style: { ...btnP, padding: "3px 6px", fontSize: 10 } }, "\u2713"),
+                    h("button", { onClick: () => setAddingSub(false), style: { ...btnG, padding: "3px 6px", fontSize: 10 } }, "\u00D7")
+                  )
+                : h("button", { onClick: () => setAddingSub(true), style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 10, fontWeight: 700, fontFamily: F, padding: "2px 0" } }, "+ sous-note")
+            )
+          )
+        ),
+        notes.length === 0 && h("div", { style: { textAlign: "center", padding: "30px 14px", color: T.textFaint, fontSize: 12, fontWeight: 600 } }, "Cliquez + pour creer une note")
       )
     ),
-    /* Timer display */
-    h("div", { style: { textAlign: "center", marginBottom: 10 } },
-      h("div", { style: { fontSize: 32, fontWeight: 900, color: finished ? "#4CAF7D" : T.text, letterSpacing: "0.04em", fontFamily: "'Nunito',sans-serif", transition: "color .3s" } }, finished ? "\u2713 Fini !" : fmtR)
-    ),
-    /* Progress bar */
-    h("div", { style: { width: "100%", height: 10, borderRadius: 6, background: T.tagBg, overflow: "hidden", marginBottom: 12 } },
-      h("div", { style: { width: pct + "%", height: "100%", borderRadius: 6, background: finished ? "#4CAF7D" : pct > 80 ? "#E8A838" : "#4CAF7D", transition: "width 1s linear, background .5s" } })
-    ),
-    /* Controls */
-    h("div", { style: { display: "flex", gap: 6, justifyContent: "center" } },
-      !running && !finished && h("button", { onClick: start, style: { background: "#4CAF7D", color: "#fff", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: F, transition: "all .15s" } }, remaining < totalSec ? "\u25B6 Reprendre" : "\u25B6 Demarrer"),
-      running && h("button", { onClick: pause, style: { background: "#E8A838", color: "#fff", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: F } }, "\u23F8 Pause"),
-      (running || remaining < totalSec) && h("button", { onClick: reset, style: { background: T.btnGhostBg, color: T.textSoft, border: "1px solid " + T.borderMed, borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F } }, "\u21BA Reset")
+    /* Editor */
+    h("div", { style: { flex: 1, background: T.card, display: "flex", flexDirection: "column", transition: "background .3s" } },
+      activeNote
+        ? h("div", { style: { flex: 1, display: "flex", flexDirection: "column" } },
+            h("div", { style: { padding: "18px 28px 14px", borderBottom: "1px solid " + T.border } },
+              activeSub && h("div", { style: { fontSize: 11, fontWeight: 700, color: T.textFaint, marginBottom: 4 } }, activeNote.title + " \u203A " + activeSub.title),
+              h("div", { style: { fontSize: 22, fontWeight: 900, color: T.text } }, activeSub ? activeSub.title : activeNote.title)
+            ),
+            h("div", { style: { flex: 1 } },
+              h("textarea", { value: currentContent, onChange: e => updateCurrentContent(e.target.value), placeholder: "Ecrivez ici...", style: {
+                width: "100%", height: "100%", border: "none", outline: "none", resize: "none", padding: "20px 28px",
+                fontSize: 14, fontWeight: 500, lineHeight: 1.8, color: T.text, background: "transparent", fontFamily: F, boxSizing: "border-box"
+              } })
+            )
+          )
+        : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8 } },
+            h("div", { style: { fontSize: 40, opacity: 0.15 } }, "\uD83D\uDCCB"),
+            h("div", { style: { fontSize: 14, fontWeight: 700, color: T.textFaint } }, "Selectionnez ou creez une note")
+          )
     )
   );
 }
+
 
 /* ===================== MAIN APP ===================== */
 function App() {
@@ -606,6 +684,8 @@ function App() {
   const [taskForm, setTaskForm] = useState(emptyTaskForm());
   const [toolForm, setToolForm] = useState({ name: "", editId: null });
   const [searchQuery, setSearchQuery] = useState("");
+  const [notesData, setNotesData] = useState(() => loadNotes());
+  const persistN = useCallback(d => { setNotesData(d); saveNotes(d); }, []);
 
   const T = dark ? THEMES.dark : THEMES.light;
 
@@ -737,7 +817,8 @@ function App() {
           h("div", { style: { display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" } },
             h("span", { style: { fontSize: 12, color: T.textMuted, fontWeight: 600, marginRight: 4 } }, new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })),
             h(ThemeToggle, { dark, onToggle: toggleDark }),
-            view !== "dashboard" && h("button", { onClick: () => { setView("dashboard"); setActiveCatId(null); setActiveSubId(null); }, style: btnG }, "Tableau de bord"),
+            view !== "dashboard" && h("button", { onClick: () => { setView("dashboard"); setActiveCatId(null); setActiveSubId(null); setSearchQuery(""); }, style: btnG }, "Tableau de bord"),
+            view !== "notes" && h("button", { onClick: () => { setView("notes"); setSearchQuery(""); }, style: btnG }, "\uD83D\uDCCB Notes"),
             h("button", { onClick: () => setSettingsModal(true), style: btnG }, "Outils"),
             h("button", { onClick: () => { setCatForm({ name: "", color: PASTEL_COLORS[0], editId: null }); setCatModal(true); }, style: btnG }, "+ Categorie"),
             h("button", { onClick: () => { setTaskForm(emptyTaskForm()); setTaskModal(true); }, style: btnP }, "+ Tache rapide")
@@ -846,8 +927,8 @@ function App() {
                   h("div", { style: { fontSize: 12, fontWeight: 700, color: T.textMuted, marginTop: 2 } }, s.l)
                 )
               ),
-              /* Pomodoro */
-              h(Pomodoro, { F })
+              /* Notes widget */
+              h(NotesWidget, { notes: notesData, onOpen: () => setView("notes"), btnP, F })
             )
           ),
 
@@ -935,6 +1016,9 @@ function App() {
           /* Right: Day Planner */
           h(DayPlanner, { tasks, cats, getCat, btnP, btnG, inp, lbl, F })
         ),
+
+        /* NOTES PAGE (OneNote style) */
+        !searchQuery.trim() && view === "notes" && h(NotesPage, { notes: notesData, persistN, btnP, btnG, inp, lbl, F }),
 
         /* CATEGORY KANBAN */
         !searchQuery.trim() && view === "category" && activeCat && h("div", null,
