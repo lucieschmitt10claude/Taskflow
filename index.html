@@ -532,7 +532,7 @@ function NotesWidget({ notes, onOpen, btnP, F }) {
   const T = useContext(ThemeCtx);
   return h("div", { style: { background: T.card, borderRadius: 16, padding: "16px 20px", border: "1px solid " + T.border, flex: "1 1 280px", minWidth: 200, transition: "background .3s", cursor: "pointer" }, onClick: onOpen },
     h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } },
-      h("div", { style: { fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" } }, "\uD83D\uDCCB Notes"),
+      h("div", { style: { fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" } }, "Notes"),
       h("button", { onClick: e => { e.stopPropagation(); onOpen(); }, style: { ...btnP, padding: "5px 10px", fontSize: 11 } }, "Ouvrir")
     ),
     notes.length === 0
@@ -540,7 +540,7 @@ function NotesWidget({ notes, onOpen, btnP, F }) {
       : h("div", { style: { display: "flex", flexDirection: "column", gap: 3 } },
           ...notes.slice(0, 5).map(n =>
             h("div", { key: n.id, style: { display: "flex", alignItems: "center", gap: 6, padding: "4px 0" } },
-              h("span", { style: { fontSize: 12 } }, "\uD83D\uDCC4"),
+              h("span", { style: { width: 10, height: 10, borderRadius: 4, background: n.color || PASTEL_COLORS[0], flexShrink: 0 } }),
               h("span", { style: { fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, n.title),
               n.subs.length > 0 && h("span", { style: { fontSize: 10, color: T.textFaint, fontWeight: 600 } }, "(" + n.subs.length + ")")
             )
@@ -557,23 +557,28 @@ function NotesPage({ notes, persistN, btnP, btnG, inp, lbl, F }) {
   const [activeSubId, setActiveSubId] = useState(null);
   const [adding, setAdding] = useState(false);
   const [addTitle, setAddTitle] = useState("");
+  const [addColor, setAddColor] = useState(PASTEL_COLORS[0]);
   const [addingSub, setAddingSub] = useState(false);
   const [subTitle, setSubTitle] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [editingColor, setEditingColor] = useState(null);
 
   const activeNote = notes.find(n => n.id === activeNoteId);
   const activeSub = activeNote ? activeNote.subs.find(s => s.id === activeSubId) : null;
 
-  const addNote = () => { if (!addTitle.trim()) return; const nn = { id: uid(), title: addTitle.trim(), content: "", subs: [] }; persistN([...notes, nn]); setActiveNoteId(nn.id); setActiveSubId(null); setAddTitle(""); setAdding(false); };
+  const addNote = () => { if (!addTitle.trim()) return; const nn = { id: uid(), title: addTitle.trim(), color: addColor, content: "", subs: [] }; persistN([...notes, nn]); setActiveNoteId(nn.id); setActiveSubId(null); setAddTitle(""); setAddColor(PASTEL_COLORS[0]); setAdding(false); };
   const deleteNote = (id) => { if (!confirm("Supprimer cette note ?")) return; const nn = notes.filter(n => n.id !== id); persistN(nn); if (activeNoteId === id) { setActiveNoteId(nn.length > 0 ? nn[0].id : null); setActiveSubId(null); } };
   const renameNote = (id) => { if (!editText.trim()) return; persistN(notes.map(n => n.id === id ? { ...n, title: editText.trim() } : n)); setEditId(null); };
   const updateNoteContent = (id, content) => persistN(notes.map(n => n.id === id ? { ...n, content } : n));
+  const changeNoteColor = (id, color) => { persistN(notes.map(n => n.id === id ? { ...n, color } : n)); setEditingColor(null); };
 
   const addSubNote = () => { if (!subTitle.trim() || !activeNote) return; const ns = { id: uid(), title: subTitle.trim(), content: "" }; persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: [...n.subs, ns] } : n)); setActiveSubId(ns.id); setSubTitle(""); setAddingSub(false); };
   const deleteSubNote = (subId) => { persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: n.subs.filter(s => s.id !== subId) } : n)); if (activeSubId === subId) setActiveSubId(null); };
   const renameSubNote = (subId) => { if (!editText.trim()) return; persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: n.subs.map(s => s.id === subId ? { ...s, title: editText.trim() } : s) } : n)); setEditId(null); };
   const updateSubContent = (subId, content) => persistN(notes.map(n => n.id === activeNoteId ? { ...n, subs: n.subs.map(s => s.id === subId ? { ...s, content } : s) } : n));
+
+  const noteColor = (n) => n.color || PASTEL_COLORS[0];
 
   const currentContent = activeSub ? activeSub.content : (activeNote ? activeNote.content : "");
   const updateCurrentContent = (c) => { if (activeSub) updateSubContent(activeSub.id, c); else if (activeNote) updateNoteContent(activeNote.id, c); };
@@ -583,11 +588,17 @@ function NotesPage({ notes, persistN, btnP, btnG, inp, lbl, F }) {
     h("div", { style: { width: 240, flexShrink: 0, background: T.headerBg, borderRight: "1px solid " + T.border, display: "flex", flexDirection: "column", transition: "background .3s" } },
       /* Sidebar header */
       h("div", { style: { padding: "14px 12px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid " + T.border } },
-        h("div", { style: { fontSize: 14, fontWeight: 900, color: T.text } }, "\uD83D\uDCCB Notes"),
+        h("div", { style: { fontSize: 14, fontWeight: 900, color: T.text } }, "Notes"),
         h("button", { onClick: () => setAdding(!adding), style: { background: T.btnPrimBg, color: T.btnPrimText, border: "none", borderRadius: 6, width: 28, height: 28, cursor: "pointer", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" } }, "+")
       ),
       adding && h("div", { style: { padding: "8px 10px", borderBottom: "1px solid " + T.border } },
-        h("input", { value: addTitle, onChange: e => setAddTitle(e.target.value), onKeyDown: e => { if (e.key === "Enter") addNote(); if (e.key === "Escape") setAdding(false); }, placeholder: "Nouvelle note...", autoFocus: true, style: { ...inp, padding: "7px 10px", fontSize: 12, marginBottom: 4 } }),
+        h("input", { value: addTitle, onChange: e => setAddTitle(e.target.value), onKeyDown: e => { if (e.key === "Enter") addNote(); if (e.key === "Escape") setAdding(false); }, placeholder: "Nouvelle note...", autoFocus: true, style: { ...inp, padding: "7px 10px", fontSize: 12, marginBottom: 6 } }),
+        h("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 } },
+          ...PASTEL_COLORS.map(c => h("button", { key: c, onClick: () => setAddColor(c), style: {
+            width: 20, height: 20, borderRadius: 5, background: c, border: addColor === c ? "2px solid " + T.text : "1px solid " + T.border,
+            cursor: "pointer", transform: addColor === c ? "scale(1.15)" : "scale(1)", transition: "all .12s"
+          } }))
+        ),
         h("div", { style: { display: "flex", gap: 4 } },
           h("button", { onClick: addNote, style: { ...btnP, padding: "5px 10px", fontSize: 11, flex: 1 } }, "Creer"),
           h("button", { onClick: () => setAdding(false), style: { ...btnG, padding: "5px 10px", fontSize: 11 } }, "\u00D7")
@@ -597,17 +608,24 @@ function NotesPage({ notes, persistN, btnP, btnG, inp, lbl, F }) {
       h("div", { style: { flex: 1, overflowY: "auto", padding: "4px 0" } },
         ...notes.map(n =>
           h("div", { key: n.id },
-            h("div", { onClick: () => { setActiveNoteId(n.id); setActiveSubId(null); }, style: {
+            h("div", { onClick: () => { setActiveNoteId(n.id); setActiveSubId(null); setEditingColor(null); }, style: {
               display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer",
               background: activeNoteId === n.id && !activeSubId ? T.kanbanBg : "transparent",
-              borderLeft: activeNoteId === n.id && !activeSubId ? "3px solid " + T.btnPrimBg : "3px solid transparent"
+              borderLeft: "4px solid " + noteColor(n)
             } },
-              h("span", { style: { fontSize: 14 } }, "\uD83D\uDCC4"),
+              h("button", { onClick: e => { e.stopPropagation(); setEditingColor(editingColor === n.id ? null : n.id); }, style: { width: 16, height: 16, borderRadius: 5, background: noteColor(n), border: "1px solid " + T.border, cursor: "pointer", flexShrink: 0, transition: "transform .12s" }, title: "Changer la couleur" }),
               editId === n.id
                 ? h("input", { value: editText, onChange: e => setEditText(e.target.value), onKeyDown: e => { if (e.key === "Enter") renameNote(n.id); if (e.key === "Escape") setEditId(null); }, onClick: e => e.stopPropagation(), autoFocus: true, style: { ...inp, flex: 1, padding: "3px 6px", fontSize: 12 } })
                 : h("span", { style: { flex: 1, fontSize: 13, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, n.title),
               h("button", { onClick: e => { e.stopPropagation(); setEditId(n.id); setEditText(n.title); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 11, padding: "2px", opacity: 0.4 }, onMouseEnter: e => e.currentTarget.style.opacity = 1, onMouseLeave: e => e.currentTarget.style.opacity = 0.4 }, "\u270F"),
               h("button", { onClick: e => { e.stopPropagation(); deleteNote(n.id); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 13, padding: "2px" }, onMouseEnter: e => e.currentTarget.style.color = "#D94F4F", onMouseLeave: e => e.currentTarget.style.color = T.textFaint }, "\u00D7")
+            ),
+            /* Color picker popover */
+            editingColor === n.id && h("div", { style: { display: "flex", gap: 3, flexWrap: "wrap", padding: "6px 12px 8px 36px", background: T.sectionBg, borderBottom: "1px solid " + T.sectionBorder }, onClick: e => e.stopPropagation() },
+              ...PASTEL_COLORS.map(c => h("button", { key: c, onClick: () => changeNoteColor(n.id, c), style: {
+                width: 18, height: 18, borderRadius: 5, background: c, border: noteColor(n) === c ? "2px solid " + T.text : "1px solid " + T.border,
+                cursor: "pointer", transition: "all .1s"
+              } }))
             ),
             activeNoteId === n.id && n.subs.map(s =>
               h("div", { key: s.id, onClick: () => setActiveSubId(s.id), style: {
@@ -641,7 +659,7 @@ function NotesPage({ notes, persistN, btnP, btnG, inp, lbl, F }) {
     h("div", { style: { flex: 1, background: T.card, display: "flex", flexDirection: "column", transition: "background .3s" } },
       activeNote
         ? h("div", { style: { flex: 1, display: "flex", flexDirection: "column" } },
-            h("div", { style: { padding: "18px 28px 14px", borderBottom: "1px solid " + T.border } },
+            h("div", { style: { padding: "18px 28px 14px", borderBottom: "1px solid " + T.border, borderLeft: "5px solid " + noteColor(activeNote) } },
               activeSub && h("div", { style: { fontSize: 11, fontWeight: 700, color: T.textFaint, marginBottom: 4 } }, activeNote.title + " \u203A " + activeSub.title),
               h("div", { style: { fontSize: 22, fontWeight: 900, color: T.text } }, activeSub ? activeSub.title : activeNote.title)
             ),
@@ -653,7 +671,7 @@ function NotesPage({ notes, persistN, btnP, btnG, inp, lbl, F }) {
             )
           )
         : h("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8 } },
-            h("div", { style: { fontSize: 40, opacity: 0.15 } }, "\uD83D\uDCCB"),
+            h("div", { style: { fontSize: 40, opacity: 0.15 } }, ""),
             h("div", { style: { fontSize: 14, fontWeight: 700, color: T.textFaint } }, "Selectionnez ou creez une note")
           )
     )
@@ -818,7 +836,7 @@ function App() {
             h("span", { style: { fontSize: 12, color: T.textMuted, fontWeight: 600, marginRight: 4 } }, new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })),
             h(ThemeToggle, { dark, onToggle: toggleDark }),
             view !== "dashboard" && h("button", { onClick: () => { setView("dashboard"); setActiveCatId(null); setActiveSubId(null); setSearchQuery(""); }, style: btnG }, "Tableau de bord"),
-            view !== "notes" && h("button", { onClick: () => { setView("notes"); setSearchQuery(""); }, style: btnG }, "\uD83D\uDCCB Notes"),
+            view !== "notes" && h("button", { onClick: () => { setView("notes"); setSearchQuery(""); }, style: btnG }, "Notes"),
             h("button", { onClick: () => setSettingsModal(true), style: btnG }, "Outils"),
             h("button", { onClick: () => { setCatForm({ name: "", color: PASTEL_COLORS[0], editId: null }); setCatModal(true); }, style: btnG }, "+ Categorie"),
             h("button", { onClick: () => { setTaskForm(emptyTaskForm()); setTaskModal(true); }, style: btnP }, "+ Tache rapide")
