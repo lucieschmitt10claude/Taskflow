@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow Pro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nunito',sans-serif;transition:background .3s,color .3s}
+  input,textarea,select{font-family:'Nunito',sans-serif}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.2);border-radius:4px}
+</style>
+</head>
+<body>
+<div id="lockscreen">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F7F7FA;font-family:'Nunito',sans-serif">
+    <div style="background:#fff;border-radius:20px;padding:40px 36px;width:90%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.08);text-align:center">
+      <div style="width:56px;height:56px;border-radius:14px;background:#1A1A2E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900;margin:0 auto 18px">T</div>
+      <h1 style="font-size:22px;font-weight:900;color:#1A1A2E;margin-bottom:6px;letter-spacing:-0.02em">TaskFlow Pro</h1>
+      <p style="font-size:13px;color:rgba(0,0,0,0.35);font-weight:600;margin-bottom:24px">Entrez votre mot de passe pour acceder a l'application</p>
+      <input id="pw-input" type="password" placeholder="Mot de passe" autofocus
+        style="width:100%;padding:13px 16px;border-radius:12px;border:1px solid rgba(0,0,0,0.09);background:rgba(0,0,0,0.025);font-size:15px;font-weight:600;font-family:'Nunito',sans-serif;outline:none;color:#1A1A2E;box-sizing:border-box;margin-bottom:12px;text-align:center"
+        onfocus="this.style.borderColor='#1A1A2E';this.style.boxShadow='0 0 0 3px rgba(26,26,46,0.06)'"
+        onblur="this.style.borderColor='rgba(0,0,0,0.09)';this.style.boxShadow='none'"
+      >
+      <div id="pw-error" style="font-size:12px;color:#D94F4F;font-weight:700;margin-bottom:12px;min-height:18px"></div>
+      <button id="pw-btn" style="width:100%;padding:13px;border-radius:12px;background:#1A1A2E;color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s">Deverrouiller</button>
+    </div>
+  </div>
+</div>
+<div id="root" style="display:none"></div>
+
+<script>
+/* ─── Password Check ─── */
+(function(){
+  /* Hash: SHA-256 du mot de passe. Pour changer le mot de passe :
+     1. Ouvre la console du navigateur (F12)
+     2. Tape : crypto.subtle.digest('SHA-256', new TextEncoder().encode('tonNouveauMdp')).then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+     3. Remplace le hash ci-dessous par le resultat */
+  const HASH = "eb0ee4c2049b56bf0856edf73dbf66a3a4d978f9eaef1248f87de8551e2b37e6";
+
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* Si deja authentifie dans cette session */
+  if (sessionStorage.getItem('tf-auth') === '1') {
+    document.getElementById('lockscreen').style.display = 'none';
+    document.getElementById('root').style.display = '';
+    return;
+  }
+
+  const inp = document.getElementById('pw-input');
+  const btn = document.getElementById('pw-btn');
+  const err = document.getElementById('pw-error');
+
+  async function tryLogin() {
+    const val = inp.value;
+    if (!val) { err.textContent = 'Veuillez entrer un mot de passe'; return; }
+    const h = await sha256(val);
+    if (h === HASH) {
+      sessionStorage.setItem('tf-auth', '1');
+      document.getElementById('lockscreen').style.display = 'none';
+      document.getElementById('root').style.display = '';
+    } else {
+      err.textContent = 'Mot de passe incorrect';
+      inp.value = '';
+      inp.focus();
+      inp.style.borderColor = '#D94F4F';
+      setTimeout(() => { inp.style.borderColor = 'rgba(0,0,0,0.09)'; }, 1500);
+    }
+  }
+
+  btn.addEventListener('click', tryLogin);
+  inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryLogin(); });
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, useCallback, createElement: h, createContext, useContext } = React;
+
+const PASTEL_COLORS = [
+  "#F4A5A5","#F9B5A1","#FBCEB1","#FFD6A5","#FFE5A0",
+  "#FFF1A0","#D5E8A0","#B5DEAD","#A8D8C8","#A0D8D8",
+  "#A0C8E8","#A5B4E8","#B0A0E8","#C4A5E8","#D8A5E8",
+  "#E8A5D8","#F4A5C8","#F9C5D1","#E8C8F0","#D0C8F8",
+];
+
+const IMPORTANCE = [
+  { id: 1, label: "Critique", color: "#D94F4F" },
+  { id: 2, label: "Haute", color: "#E88A3A" },
+  { id: 3, label: "Moyenne", color: "#D4B840" },
+  { id: 4, label: "Basse", color: "#6AAF8B" },
+];
+
+const STORAGE_KEY = "taskflow-pro-v7";
+const THEME_KEY = "taskflow-theme";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
+function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+
+const emptyTaskForm = () => ({ title: "", note: "", checklist: [], newCheckItem: "", tools: [], dueDate: "", importance: 3, editId: null, catId: null, subId: null, status: "todo" });
+
+/* ─── THEMES ─── */
+const THEMES = {
+  light: {
+    bg: "#F7F7FA", card: "#fff", text: "#1A1A2E", textSoft: "rgba(0,0,0,0.5)", textMuted: "rgba(0,0,0,0.35)",
+    textFaint: "rgba(0,0,0,0.2)", textGhost: "rgba(0,0,0,0.12)", border: "rgba(0,0,0,0.04)", borderMed: "rgba(0,0,0,0.07)",
+    borderStrong: "rgba(0,0,0,0.09)", headerBg: "#fff", headerBorder: "rgba(0,0,0,0.05)",
+    btnPrimBg: "#1A1A2E", btnPrimText: "#fff", btnGhostBg: "rgba(0,0,0,0.04)", btnGhostText: "rgba(0,0,0,0.5)",
+    inputBg: "rgba(0,0,0,0.025)", inputText: "#1A1A2E", modalBg: "#fff", modalOverlay: "rgba(0,0,0,0.35)",
+    kanbanBg: "rgba(0,0,0,0.018)", cardShadow: "0 1px 4px rgba(0,0,0,0.04)", cardHover: "0 4px 16px rgba(0,0,0,0.07)",
+    pieBg: "rgba(0,0,0,0.03)", pieStroke: "#F7F7FA", pieText: "rgba(0,0,0,0.55)", pieSub: "rgba(0,0,0,0.3)",
+    checkBg: "#fff", checkBorder: "rgba(0,0,0,0.12)", checkDoneBg: "rgba(76,175,125,0.04)", checkDoneBorder: "rgba(76,175,125,0.12)",
+    sectionBg: "rgba(0,0,0,0.012)", sectionBorder: "rgba(0,0,0,0.04)",
+    noteBg: "rgba(0,0,0,0.38)", tagBg: "rgba(0,0,0,0.04)", tagText: "rgba(0,0,0,0.3)",
+    toolTagBg: "rgba(100,100,140,0.06)", toolTagText: "rgba(60,60,90,0.5)",
+    focusShadow: "0 0 0 3px rgba(26,26,46,0.06)", focusBorder: "#1A1A2E",
+    dotTodo: "rgba(100,100,140,0.45)", dotDoing: "#E8A838", dotDone: "#4CAF7D",
+  },
+  dark: {
+    bg: "#0F0F14", card: "#1A1A24", text: "#E8E8F0", textSoft: "rgba(255,255,255,0.55)", textMuted: "rgba(255,255,255,0.35)",
+    textFaint: "rgba(255,255,255,0.2)", textGhost: "rgba(255,255,255,0.08)", border: "rgba(255,255,255,0.06)", borderMed: "rgba(255,255,255,0.1)",
+    borderStrong: "rgba(255,255,255,0.12)", headerBg: "#15151E", headerBorder: "rgba(255,255,255,0.06)",
+    btnPrimBg: "#6C63FF", btnPrimText: "#fff", btnGhostBg: "rgba(255,255,255,0.06)", btnGhostText: "rgba(255,255,255,0.55)",
+    inputBg: "rgba(255,255,255,0.05)", inputText: "#E8E8F0", modalBg: "#1E1E2A", modalOverlay: "rgba(0,0,0,0.6)",
+    kanbanBg: "rgba(255,255,255,0.02)", cardShadow: "0 1px 4px rgba(0,0,0,0.2)", cardHover: "0 4px 16px rgba(0,0,0,0.3)",
+    pieBg: "rgba(255,255,255,0.04)", pieStroke: "#0F0F14", pieText: "rgba(255,255,255,0.6)", pieSub: "rgba(255,255,255,0.3)",
+    checkBg: "rgba(255,255,255,0.05)", checkBorder: "rgba(255,255,255,0.15)", checkDoneBg: "rgba(76,175,125,0.08)", checkDoneBorder: "rgba(76,175,125,0.2)",
+    sectionBg: "rgba(255,255,255,0.03)", sectionBorder: "rgba(255,255,255,0.06)",
+    noteBg: "rgba(255,255,255,0.4)", tagBg: "rgba(255,255,255,0.06)", tagText: "rgba(255,255,255,0.35)",
+    toolTagBg: "rgba(140,140,200,0.1)", toolTagText: "rgba(160,160,220,0.6)",
+    focusShadow: "0 0 0 3px rgba(108,99,255,0.15)", focusBorder: "#6C63FF",
+    dotTodo: "rgba(160,160,200,0.5)", dotDoing: "#E8A838", dotDone: "#4CAF7D",
+  }
+};
+
+/* ─── SVG Donut ─── */
+function PieChart({ segments, size = 180 }) {
+  const T = useContext(ThemeCtx);
+  const total = segments.reduce((s, g) => s + g.value, 0);
+  if (total === 0) return h("div", { style: { width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: T.pieBg } },
+    h("span", { style: { color: T.textFaint, fontSize: 13, fontWeight: 700 } }, "Aucune tache")
+  );
+  const r = size / 2, cx = r, cy = r, inner = r * 0.58;
+  let cum = -Math.PI / 2;
+  const paths = segments.filter(s => s.value > 0).map(seg => {
+    const a = (seg.value / total) * 2 * Math.PI;
+    const s1 = { x: cx + r * Math.cos(cum), y: cy + r * Math.sin(cum) };
+    const e = cum + a;
+    const s2 = { x: cx + r * Math.cos(e), y: cy + r * Math.sin(e) };
+    const i1 = { x: cx + inner * Math.cos(e), y: cy + inner * Math.sin(e) };
+    const i2 = { x: cx + inner * Math.cos(cum), y: cy + inner * Math.sin(cum) };
+    const lg = a > Math.PI ? 1 : 0;
+    const d = `M ${s1.x} ${s1.y} A ${r} ${r} 0 ${lg} 1 ${s2.x} ${s2.y} L ${i1.x} ${i1.y} A ${inner} ${inner} 0 ${lg} 0 ${i2.x} ${i2.y} Z`;
+    cum = e;
+    return { d, color: seg.color, label: seg.label };
+  });
+  return h("svg", { width: size, height: size, viewBox: `0 0 ${size} ${size}` },
+    ...paths.map((p, i) => h("path", { key: i, d: p.d, fill: p.color, stroke: T.pieStroke, strokeWidth: "2" })),
+    h("text", { x: cx, y: cy - 4, textAnchor: "middle", fill: T.pieText, fontSize: "26", fontWeight: "900", fontFamily: "'Nunito',sans-serif" }, total),
+    h("text", { x: cx, y: cy + 14, textAnchor: "middle", fill: T.pieSub, fontSize: "10", fontWeight: "700", fontFamily: "'Nunito',sans-serif" }, "taches actives")
+  );
+}
+
+/* ─── Modal ─── */
+function Modal({ open, onClose, children, wide }) {
+  const T = useContext(ThemeCtx);
+  if (!open) return null;
+  return h("div", { onClick: onClose, style: { position: "fixed", inset: 0, background: T.modalOverlay, backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 } },
+    h("div", { onClick: e => e.stopPropagation(), style: { background: T.modalBg, borderRadius: 20, padding: "28px 26px", width: "94%", maxWidth: wide ? 620 : 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", animation: "slideUp .25s ease", border: "1px solid " + T.border } }, children)
+  );
+}
+
+/* ─── Color Picker ─── */
+function ColorPicker({ value, onChange }) {
+  const T = useContext(ThemeCtx);
+  return h("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+    ...PASTEL_COLORS.map(c => h("button", { key: c, onClick: () => onChange(c), style: {
+      width: 30, height: 30, borderRadius: 8, background: c,
+      border: value === c ? "3px solid " + T.textSoft : "2px solid " + T.textGhost,
+      cursor: "pointer", transition: "all .15s", transform: value === c ? "scale(1.18)" : "scale(1)"
+    } }))
+  );
+}
+
+/* ─── Importance Badge ─── */
+function ImportanceBadge({ level, small }) {
+  const imp = IMPORTANCE.find(i => i.id === level);
+  if (!imp) return null;
+  return h("span", { style: {
+    fontSize: small ? 10 : 11, fontWeight: 800, padding: small ? "1px 7px" : "2px 9px",
+    borderRadius: 6, background: `${imp.color}15`, color: imp.color, letterSpacing: "0.02em"
+  } }, imp.label);
+}
+
+/* ─── Checklist Progress ─── */
+function ChecklistProgress({ checklist }) {
+  if (!checklist || checklist.length === 0) return null;
+  const done = checklist.filter(c => c.done).length;
+  const total = checklist.length;
+  const pct = Math.round((done / total) * 100);
+  return h("div", { style: { display: "flex", alignItems: "center", gap: 5 } },
+    h("div", { style: { width: 40, height: 4, borderRadius: 2, background: "rgba(128,128,128,0.15)", overflow: "hidden" } },
+      h("div", { style: { width: pct + "%", height: "100%", borderRadius: 2, background: done === total ? "#4CAF7D" : "#E8A838", transition: "width .3s" } })
+    ),
+    h("span", { style: { fontSize: 9, fontWeight: 800, color: done === total ? "#4CAF7D" : "rgba(128,128,128,0.5)" } }, done + "/" + total)
+  );
+}
+
+/* ─── Task Card ─── */
+function TaskCard({ task, tools, catColor, onEdit }) {
+  const T = useContext(ThemeCtx);
+  const usedTools = (task.tools || []).map(tid => tools.find(t => t.id === tid)).filter(Boolean);
+  const isUncategorized = !task.catId;
+  const cl = task.checklist || [];
+  return h("div", {
+    draggable: true,
+    onDragStart: e => { e.dataTransfer.setData("text/plain", task.id); },
+    onClick: () => onEdit(task),
+    style: {
+      background: T.card, borderRadius: 12, padding: "13px 15px", cursor: "grab",
+      borderLeft: `4px solid ${isUncategorized ? T.textGhost : (catColor || T.textGhost)}`,
+      boxShadow: T.cardShadow, transition: "box-shadow .2s, transform .15s", marginBottom: 8
+    },
+    onMouseEnter: e => { e.currentTarget.style.boxShadow = T.cardHover; e.currentTarget.style.transform = "translateY(-1px)"; },
+    onMouseLeave: e => { e.currentTarget.style.boxShadow = T.cardShadow; e.currentTarget.style.transform = "translateY(0)"; }
+  },
+    h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6 } },
+      h("div", { style: { fontSize: 14, fontWeight: 700, color: T.text, lineHeight: 1.35, flex: 1 } }, task.title),
+      h(ImportanceBadge, { level: task.importance, small: true })
+    ),
+    task.note && h("div", { style: { fontSize: 12, color: T.noteBg, lineHeight: 1.4, marginBottom: 6, whiteSpace: "pre-wrap", maxHeight: 34, overflow: "hidden", textOverflow: "ellipsis" } }, task.note),
+    cl.length > 0 && h("div", { style: { marginBottom: 6 } },
+      ...cl.slice(0, 3).map(item =>
+        h("div", { key: item.id, style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 2 } },
+          h("span", { style: { width: 12, height: 12, borderRadius: 3, border: item.done ? "none" : "1.5px solid " + T.textFaint, background: item.done ? "#4CAF7D" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#fff", flexShrink: 0 } }, item.done ? "\u2713" : ""),
+          h("span", { style: { fontSize: 11, color: item.done ? T.textFaint : T.textSoft, textDecoration: item.done ? "line-through" : "none", fontWeight: 600, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, item.text)
+        )
+      ),
+      cl.length > 3 && h("span", { style: { fontSize: 10, color: T.textFaint, fontWeight: 700 } }, "+" + (cl.length - 3) + " autres...")
+    ),
+    h("div", { style: { display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" } },
+      isUncategorized && h("span", { style: { fontSize: 10, fontWeight: 700, padding: "1px 8px", borderRadius: 5, background: T.tagBg, color: T.tagText } }, "Rapide"),
+      task.dueDate && h("span", { style: { fontSize: 10, fontWeight: 700, padding: "1px 8px", borderRadius: 5, background: T.tagBg, color: T.textMuted } }, new Date(task.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })),
+      h(ChecklistProgress, { checklist: cl }),
+      ...usedTools.map(t => h("span", { key: t.id, style: { fontSize: 10, fontWeight: 700, padding: "1px 8px", borderRadius: 5, background: T.toolTagBg, color: T.toolTagText, textTransform: "uppercase" } }, t.name))
+    )
+  );
+}
+
+/* ─── Kanban Column ─── */
+function KanbanCol({ status, label, tasks, tools, color, onEdit, onDrop }) {
+  const T = useContext(ThemeCtx);
+  const [over, setOver] = useState(false);
+  const dots = { todo: T.dotTodo, doing: T.dotDoing, done: T.dotDone };
+  return h("div", {
+    onDragOver: e => { e.preventDefault(); setOver(true); },
+    onDragLeave: () => setOver(false),
+    onDrop: e => { e.preventDefault(); setOver(false); onDrop(e.dataTransfer.getData("text/plain"), status); },
+    style: {
+      flex: "1 1 0", minWidth: 230, background: over ? `${color || "#aaa"}10` : T.kanbanBg,
+      borderRadius: 16, padding: "14px 12px", transition: "background .2s",
+      border: over ? `2px dashed ${color || "#aaa"}55` : "2px dashed transparent",
+      display: "flex", flexDirection: "column"
+    }
+  },
+    h("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "0 4px" } },
+      h("span", { style: { width: 8, height: 8, borderRadius: "50%", background: dots[status] } }),
+      h("span", { style: { fontSize: 12, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" } }, label),
+      h("span", { style: { fontSize: 12, fontWeight: 700, color: T.textFaint, marginLeft: "auto" } }, tasks.length)
+    ),
+    h("div", { style: { flex: 1, minHeight: 60 } },
+      ...tasks.map(t => h(TaskCard, { key: t.id, task: t, tools, catColor: color, onEdit }))
+    )
+  );
+}
+
+/* ─── Day Planner ("Ma journée") ─── */
+const DAY_KEY = "taskflow-dayplan";
+function loadDayPlan() { try { const r = localStorage.getItem(DAY_KEY); return r ? JSON.parse(r) : []; } catch { return []; } }
+function saveDayPlan(d) { try { localStorage.setItem(DAY_KEY, JSON.stringify(d)); } catch(e) { console.error(e); } }
+
+function DayPlanner({ tasks, cats, getCat, btnP, btnG, inp, lbl, F }) {
+  const T = useContext(ThemeCtx);
+  const [items, setItems] = useState(() => loadDayPlan());
+  const [adding, setAdding] = useState(false);
+  const [pickCat, setPickCat] = useState("");
+  const [pickSub, setPickSub] = useState("");
+  const [pickTask, setPickTask] = useState("");
+  const [pickStart, setPickStart] = useState("09:00");
+  const [pickDur, setPickDur] = useState(60);
+  const [dragId, setDragId] = useState(null);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [dragOrigTop, setDragOrigTop] = useState(0);
+  const [didDrag, setDidDrag] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editStart, setEditStart] = useState("09:00");
+  const [editDur, setEditDur] = useState(60);
+
+  const persistDay = (d) => { setItems(d); saveDayPlan(d); };
+
+  const START_H = 6, END_H = 23, HOUR_PX = 56;
+  const totalH = END_H - START_H;
+
+  const hourToY = (hr, mn) => ((hr - START_H) + mn / 60) * HOUR_PX;
+  const yToTime = (y) => {
+    const totalMin = Math.max(0, Math.round((y / HOUR_PX) * 60 / 15) * 15);
+    const hr = START_H + Math.floor(totalMin / 60);
+    const mn = totalMin % 60;
+    return { hr: Math.min(hr, END_H - 1), mn };
+  };
+
+  const filteredTasks = tasks.filter(t => {
+    if (t.status === "done") return false;
+    if (pickCat === "__none__") return !t.catId;
+    if (pickCat && t.catId !== pickCat) return false;
+    if (pickSub && t.subId !== pickSub) return false;
+    return true;
+  });
+
+  const selectedCat = pickCat && pickCat !== "__none__" ? getCat(pickCat) : null;
+
+  const addItem = () => {
+    if (!pickTask) return;
+    const [hh, mm] = pickStart.split(":").map(Number);
+    persistDay([...items, { id: uid(), taskId: pickTask, startHr: hh, startMin: mm || 0, durMin: pickDur }]);
+    setAdding(false); setPickCat(""); setPickSub(""); setPickTask(""); setPickStart("09:00"); setPickDur(60);
+  };
+
+  const removeItem = (id) => persistDay(items.filter(i => i.id !== id));
+
+  const onMouseDown = (e, item) => {
+    e.preventDefault(); e.stopPropagation();
+    setDragId(item.id);
+    setDragStartY(e.clientY);
+    setDragOrigTop(hourToY(item.startHr, item.startMin));
+    setDidDrag(false);
+  };
+
+  const openEdit = (item) => {
+    setEditId(item.id);
+    setEditStart(fmtTime(item.startHr, item.startMin));
+    setEditDur(item.durMin);
+  };
+
+  const saveEdit = () => {
+    if (!editId) return;
+    const [hh, mm] = editStart.split(":").map(Number);
+    persistDay(items.map(it => it.id === editId ? { ...it, startHr: hh || 0, startMin: mm || 0, durMin: editDur } : it));
+    setEditId(null);
+  };
+
+  useEffect(() => {
+    if (!dragId) return;
+    const onMove = (e) => {
+      const dy = e.clientY - dragStartY;
+      if (Math.abs(dy) > 3) setDidDrag(true);
+      const newTop = Math.max(0, Math.min(dragOrigTop + dy, totalH * HOUR_PX - 20));
+      const { hr, mn } = yToTime(newTop);
+      setItems(prev => prev.map(it => it.id === dragId ? { ...it, startHr: hr, startMin: mn } : it));
+    };
+    const onUp = () => {
+      if (!didDrag) {
+        const item = items.find(it => it.id === dragId);
+        if (item) openEdit(item);
+      }
+      setDragId(null);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [dragId, dragStartY, dragOrigTop, didDrag]);
+
+  useEffect(() => { if (!dragId) saveDayPlan(items); }, [dragId]);
+
+  const getBlockColor = (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.catId) return T.dotTodo;
+    const cat = getCat(task.catId);
+    return cat ? cat.color : T.dotTodo;
+  };
+  const getTaskTitle = (taskId) => { const task = tasks.find(t => t.id === taskId); return task ? task.title : "(supprimee)"; };
+
+  const hours = []; for (let i = START_H; i < END_H; i++) hours.push(i);
+
+  const fmtTime = (hr, mn) => (hr < 10 ? "0" : "") + hr + ":" + (mn < 10 ? "0" : "") + mn;
+  const fmtEnd = (hr, mn, dur) => { const end = hr * 60 + mn + dur; return fmtTime(Math.floor(end / 60), end % 60); };
+
+  return h("div", { style: { background: T.card, borderRadius: 18, border: "1px solid " + T.border, padding: "18px 16px", width: 300, flexShrink: 0, transition: "background .3s", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 120px)" } },
+    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 } },
+      h("div", { style: { fontSize: 14, fontWeight: 900, color: T.text, display: "flex", alignItems: "center", gap: 6 } }, "\uD83D\uDCC5 Ma journee"),
+      h("div", { style: { display: "flex", gap: 5 } },
+        items.length > 0 && h("button", { onClick: () => { if (confirm("Vider tout le planning de la journee ?")) persistDay([]); }, title: "Vider la journee", style: { background: "none", border: "1px solid rgba(217,79,79,0.2)", borderRadius: 8, padding: "5px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer", color: "#D94F4F", fontFamily: F, transition: "all .2s" } }, "\uD83D\uDDD1"),
+        h("button", { onClick: () => setAdding(!adding), style: { ...btnP, padding: "6px 12px", fontSize: 11 } }, adding ? "Fermer" : "+ Ajouter")
+      )
+    ),
+
+    adding && h("div", { style: { background: T.sectionBg, borderRadius: 10, padding: "12px", border: "1px solid " + T.sectionBorder, marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 } },
+      h("select", { value: pickCat, onChange: e => { setPickCat(e.target.value); setPickSub(""); setPickTask(""); }, style: { ...inp, padding: "8px 10px", fontSize: 12 } },
+        h("option", { value: "" }, "-- Toutes les taches --"),
+        h("option", { value: "__none__" }, "Taches rapides"),
+        ...cats.map(c => h("option", { key: c.id, value: c.id }, c.name))
+      ),
+      selectedCat && selectedCat.subs.length > 0 && h("select", { value: pickSub, onChange: e => { setPickSub(e.target.value); setPickTask(""); }, style: { ...inp, padding: "8px 10px", fontSize: 12 } },
+        h("option", { value: "" }, "-- Toutes sous-cat --"),
+        ...selectedCat.subs.map(s => h("option", { key: s.id, value: s.id }, s.num + ". " + s.name))
+      ),
+      h("select", { value: pickTask, onChange: e => setPickTask(e.target.value), style: { ...inp, padding: "8px 10px", fontSize: 12 } },
+        h("option", { value: "" }, "-- Choisir une tache --"),
+        ...filteredTasks.map(t => h("option", { key: t.id, value: t.id }, t.title))
+      ),
+      h("div", { style: { display: "flex", gap: 6 } },
+        h("div", { style: { flex: 1 } },
+          h("div", { style: { ...lbl, fontSize: 9, marginBottom: 3 } }, "Debut"),
+          h("input", { type: "time", value: pickStart, onChange: e => setPickStart(e.target.value), style: { ...inp, padding: "6px 8px", fontSize: 12 } })
+        ),
+        h("div", { style: { flex: 1 } },
+          h("div", { style: { ...lbl, fontSize: 9, marginBottom: 3 } }, "Duree"),
+          h("select", { value: pickDur, onChange: e => setPickDur(Number(e.target.value)), style: { ...inp, padding: "6px 8px", fontSize: 12 } },
+            ...[15,30,45,60,90,120,150,180,240].map(d => h("option", { key: d, value: d }, d >= 60 ? (d / 60) + "h" + (d % 60 ? (d % 60) + "m" : "") : d + "min"))
+          )
+        )
+      ),
+      h("button", { onClick: addItem, style: { ...btnP, padding: "7px 14px", fontSize: 12, opacity: pickTask ? 1 : 0.35 } }, "Placer dans ma journee")
+    ),
+
+    h("div", { style: { flex: 1, overflowY: "auto", position: "relative", marginTop: 4 } },
+      h("div", { style: { position: "relative", height: totalH * HOUR_PX } },
+        ...hours.map(hr =>
+          h("div", { key: hr, style: { position: "absolute", top: (hr - START_H) * HOUR_PX, left: 0, right: 0, height: HOUR_PX, borderTop: "1px solid " + T.border } },
+            h("span", { style: { position: "absolute", top: -1, left: 0, fontSize: 9, fontWeight: 800, color: T.textFaint, userSelect: "none", lineHeight: 1 } }, fmtTime(hr, 0))
+          )
+        ),
+        ...items.map(item => {
+          const top = hourToY(item.startHr, item.startMin);
+          const height = Math.max(20, (item.durMin / 60) * HOUR_PX);
+          const color = getBlockColor(item.taskId);
+          const title = getTaskTitle(item.taskId);
+          return h("div", {
+            key: item.id, onMouseDown: e => onMouseDown(e, item),
+            style: {
+              position: "absolute", top, left: 36, right: 4, height,
+              background: color + "25", borderLeft: "3px solid " + color, borderRadius: 6,
+              padding: "3px 6px", cursor: dragId === item.id ? "grabbing" : "grab",
+              fontSize: 11, fontWeight: 700, color: T.text, overflow: "hidden",
+              display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+              zIndex: dragId === item.id ? 50 : 10, transition: dragId === item.id ? "none" : "top .15s ease",
+              userSelect: "none", boxShadow: dragId === item.id ? "0 4px 12px rgba(0,0,0,0.15)" : "none"
+            }
+          },
+            h("div", { style: { flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 } },
+              h("div", { style: { fontSize: 10, fontWeight: 800 } }, title),
+              height > 28 && h("div", { style: { fontSize: 9, fontWeight: 600, color: T.textMuted, marginTop: 1 } }, fmtTime(item.startHr, item.startMin) + " - " + fmtEnd(item.startHr, item.startMin, item.durMin))
+            ),
+            h("button", { onClick: e => { e.stopPropagation(); removeItem(item.id); },
+              style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 12, fontWeight: 900, padding: "0 2px", lineHeight: 1, flexShrink: 0 },
+              onMouseDown: e => e.stopPropagation(),
+              onMouseEnter: e => e.currentTarget.style.color = "#D94F4F", onMouseLeave: e => e.currentTarget.style.color = T.textFaint
+            }, "\u00D7")
+          );
+        }),
+        /* Edit popover */
+        (() => {
+          if (!editId) return null;
+          const ei = items.find(it => it.id === editId);
+          if (!ei) return null;
+          const popTop = Math.min(hourToY(ei.startHr, ei.startMin), (totalH - 3) * HOUR_PX);
+          return h("div", { onClick: e => e.stopPropagation(), onMouseDown: e => e.stopPropagation(), style: {
+            position: "absolute", top: popTop, left: 20, right: -4, zIndex: 100,
+            background: T.modalBg, borderRadius: 12, padding: "12px", border: "1px solid " + T.borderStrong,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column", gap: 8
+          } },
+            h("div", { style: { fontSize: 12, fontWeight: 800, color: T.text, marginBottom: 2 } }, getTaskTitle(ei.taskId)),
+            h("div", { style: { display: "flex", gap: 6 } },
+              h("div", { style: { flex: 1 } },
+                h("div", { style: { ...lbl, fontSize: 9, marginBottom: 3 } }, "Debut"),
+                h("input", { type: "time", value: editStart, onChange: e => setEditStart(e.target.value), style: { ...inp, padding: "6px 8px", fontSize: 12 } })
+              ),
+              h("div", { style: { flex: 1 } },
+                h("div", { style: { ...lbl, fontSize: 9, marginBottom: 3 } }, "Duree"),
+                h("select", { value: editDur, onChange: e => setEditDur(Number(e.target.value)), style: { ...inp, padding: "6px 8px", fontSize: 12 } },
+                  ...[15,30,45,60,90,120,150,180,240].map(d => h("option", { key: d, value: d }, d >= 60 ? (d / 60) + "h" + (d % 60 ? (d % 60) + "m" : "") : d + "min"))
+                )
+              )
+            ),
+            h("div", { style: { display: "flex", gap: 6, justifyContent: "flex-end" } },
+              h("button", { onClick: () => setEditId(null), style: { ...btnG, padding: "5px 10px", fontSize: 11 } }, "Annuler"),
+              h("button", { onClick: saveEdit, style: { ...btnP, padding: "5px 12px", fontSize: 11 } }, "OK")
+            )
+          );
+        })()
+      )
+    ),
+
+    items.length > 0 && h("div", { style: { marginTop: 8, paddingTop: 8, borderTop: "1px solid " + T.border, fontSize: 10, fontWeight: 700, color: T.textMuted, textAlign: "center" } },
+      items.length + " tache" + (items.length > 1 ? "s" : "") + " \u2022 " + (Math.round(items.reduce((s, i) => s + i.durMin, 0) / 60 * 10) / 10) + "h planifiee" + (items.reduce((s, i) => s + i.durMin, 0) > 60 ? "s" : "")
+    )
+  );
+}
+
+/* ─── Theme Toggle Button ─── */
+function ThemeToggle({ dark, onToggle }) {
+  return h("button", {
+    onClick: onToggle,
+    title: dark ? "Mode jour" : "Mode nuit",
+    style: {
+      width: 36, height: 36, borderRadius: 10, border: "none", cursor: "pointer",
+      background: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 18, transition: "all .2s", flexShrink: 0
+    }
+  }, dark ? "\u2600\uFE0F" : "\uD83C\uDF19");
+}
+
+/* Theme context */
+const ThemeCtx = createContext(THEMES.light);
+
+/* ─── Pomodoro Timer ─── */
+function Pomodoro({ F }) {
+  const T = useContext(ThemeCtx);
+  const [totalSec, setTotalSec] = useState(25 * 60);
+  const [remaining, setRemaining] = useState(25 * 60);
+  const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [inputMin, setInputMin] = useState("25");
+  const intervalRef = React.useRef(null);
+
+  useEffect(() => {
+    if (!running) { if (intervalRef.current) clearInterval(intervalRef.current); return; }
+    intervalRef.current = setInterval(() => {
+      setRemaining(prev => {
+        if (prev <= 1) { clearInterval(intervalRef.current); setRunning(false); setFinished(true); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalRef.current);
+  }, [running]);
+
+  const pct = totalSec > 0 ? ((totalSec - remaining) / totalSec) * 100 : 0;
+  const mm = Math.floor(remaining / 60);
+  const ss = remaining % 60;
+  const fmtR = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss;
+
+  const applyTime = () => { const v = parseInt(inputMin); if (v > 0 && v <= 999) { setTotalSec(v * 60); setRemaining(v * 60); setFinished(false); } };
+  const start = () => { if (remaining > 0) { setFinished(false); setRunning(true); } };
+  const pause = () => setRunning(false);
+  const reset = () => { setRunning(false); setRemaining(totalSec); setFinished(false); };
+
+  return h("div", { style: { background: T.card, borderRadius: 16, padding: "16px 20px", border: "1px solid " + T.border, flex: "1 1 200px", minWidth: 200, transition: "background .3s" } },
+    h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } },
+      h("div", { style: { fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" } }, "\uD83C\uDF45 Pomodoro"),
+      !running && h("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
+        h("input", { type: "number", value: inputMin, onChange: e => setInputMin(e.target.value),
+          onKeyDown: e => { if (e.key === "Enter") applyTime(); },
+          onBlur: applyTime,
+          min: 1, max: 999,
+          style: { width: 44, padding: "4px 6px", borderRadius: 7, border: "1px solid " + T.borderStrong, background: T.inputBg, color: T.text, fontSize: 13, fontWeight: 800, fontFamily: F, textAlign: "center", outline: "none", boxSizing: "border-box" }
+        }),
+        h("span", { style: { fontSize: 11, fontWeight: 700, color: T.textMuted } }, "min")
+      )
+    ),
+    /* Timer display */
+    h("div", { style: { textAlign: "center", marginBottom: 10 } },
+      h("div", { style: { fontSize: 32, fontWeight: 900, color: finished ? "#4CAF7D" : T.text, letterSpacing: "0.04em", fontFamily: "'Nunito',sans-serif", transition: "color .3s" } }, finished ? "\u2713 Fini !" : fmtR)
+    ),
+    /* Progress bar */
+    h("div", { style: { width: "100%", height: 10, borderRadius: 6, background: T.tagBg, overflow: "hidden", marginBottom: 12 } },
+      h("div", { style: { width: pct + "%", height: "100%", borderRadius: 6, background: finished ? "#4CAF7D" : pct > 80 ? "#E8A838" : "#4CAF7D", transition: "width 1s linear, background .5s" } })
+    ),
+    /* Controls */
+    h("div", { style: { display: "flex", gap: 6, justifyContent: "center" } },
+      !running && !finished && h("button", { onClick: start, style: { background: "#4CAF7D", color: "#fff", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: F, transition: "all .15s" } }, remaining < totalSec ? "\u25B6 Reprendre" : "\u25B6 Demarrer"),
+      running && h("button", { onClick: pause, style: { background: "#E8A838", color: "#fff", border: "none", borderRadius: 8, padding: "7px 18px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: F } }, "\u23F8 Pause"),
+      (running || remaining < totalSec) && h("button", { onClick: reset, style: { background: T.btnGhostBg, color: T.textSoft, border: "1px solid " + T.borderMed, borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F } }, "\u21BA Reset")
+    )
+  );
+}
+
+/* ===================== MAIN APP ===================== */
+function App() {
+  const defaultTools = [
+    { id: "t1", name: "Excel" }, { id: "t2", name: "INPI" }, { id: "t3", name: "Medialex" },
+    { id: "t4", name: "Yousign" }, { id: "t5", name: "INSEE" }, { id: "t6", name: "MAPI" },
+  ];
+  const [data, setData] = useState({ categories: [], tools: defaultTools, tasks: [] });
+  const [loaded, setLoaded] = useState(false);
+  const [dark, setDark] = useState(() => { try { return localStorage.getItem(THEME_KEY) === "dark"; } catch { return false; } });
+  const [view, setView] = useState("dashboard");
+  const [activeCatId, setActiveCatId] = useState(null);
+  const [activeSubId, setActiveSubId] = useState(null);
+
+  const [catModal, setCatModal] = useState(false);
+  const [subModal, setSubModal] = useState(false);
+  const [taskModal, setTaskModal] = useState(false);
+  const [settingsModal, setSettingsModal] = useState(false);
+
+  const [catForm, setCatForm] = useState({ name: "", color: PASTEL_COLORS[0], editId: null });
+  const [subForm, setSubForm] = useState({ name: "", parentId: null, editId: null });
+  const [taskForm, setTaskForm] = useState(emptyTaskForm());
+  const [toolForm, setToolForm] = useState({ name: "", editId: null });
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const T = dark ? THEMES.dark : THEMES.light;
+
+  const toggleDark = () => { const n = !dark; setDark(n); try { localStorage.setItem(THEME_KEY, n ? "dark" : "light"); } catch {} };
+
+  const persist = useCallback(d => { setData(d); saveData(d); }, []);
+  useEffect(() => { const d = loadData(); if (d) setData(d); setLoaded(true); }, []);
+
+  /* Apply body bg */
+  useEffect(() => { document.body.style.background = T.bg; }, [dark]);
+
+  if (!loaded) return h("div", { style: { minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Nunito',sans-serif", color: T.textFaint, fontWeight: 700 } }, "Chargement...");
+
+  const cats = data.categories || [];
+  const tasks = data.tasks || [];
+  const tools = data.tools || [];
+  const getCat = id => cats.find(c => c.id === id);
+  const activeCat = getCat(activeCatId);
+
+  const sortByImportance = arr => [...arr].sort((a, b) => (a.importance || 3) - (b.importance || 3));
+  const sortByDoneOrder = arr => [...arr].sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+
+  /* Category CRUD */
+  const saveCategory = () => {
+    if (!catForm.name.trim()) return;
+    let u;
+    if (catForm.editId) u = { ...data, categories: cats.map(c => c.id === catForm.editId ? { ...c, name: catForm.name.trim(), color: catForm.color } : c) };
+    else u = { ...data, categories: [...cats, { id: uid(), name: catForm.name.trim(), color: catForm.color, subs: [] }] };
+    persist(u); setCatModal(false); setCatForm({ name: "", color: PASTEL_COLORS[0], editId: null });
+  };
+  const deleteCategory = id => {
+    if (!confirm("Supprimer cette categorie et toutes ses taches ?")) return;
+    persist({ ...data, categories: cats.filter(c => c.id !== id), tasks: tasks.filter(t => t.catId !== id) });
+    if (activeCatId === id) { setView("dashboard"); setActiveCatId(null); }
+  };
+
+  /* Subcategory CRUD */
+  const saveSubcategory = () => {
+    if (!subForm.name.trim() || !subForm.parentId) return;
+    const p = getCat(subForm.parentId); if (!p) return;
+    let ns;
+    if (subForm.editId) ns = p.subs.map(s => s.id === subForm.editId ? { ...s, name: subForm.name.trim() } : s);
+    else ns = [...p.subs, { id: uid(), name: subForm.name.trim(), num: p.subs.length + 1 }];
+    persist({ ...data, categories: cats.map(c => c.id === subForm.parentId ? { ...c, subs: ns } : c) });
+    setSubModal(false); setSubForm({ name: "", parentId: null, editId: null });
+  };
+  const deleteSubcategory = (catId, subId) => {
+    if (!confirm("Supprimer cette sous-categorie et ses taches ?")) return;
+    const c = getCat(catId); let n = 0;
+    const ns = c.subs.filter(s => s.id !== subId).map(s => ({ ...s, num: ++n }));
+    persist({ ...data, categories: cats.map(x => x.id === catId ? { ...x, subs: ns } : x), tasks: tasks.filter(t => !(t.catId === catId && t.subId === subId)) });
+    if (activeSubId === subId) setActiveSubId(null);
+  };
+
+  /* Task CRUD */
+  const saveTask = () => {
+    if (!taskForm.title.trim()) return;
+    const cl = taskForm.checklist.filter(c => c.text.trim());
+    let u;
+    if (taskForm.editId) {
+      u = { ...data, tasks: tasks.map(t => t.id === taskForm.editId ? { ...t, title: taskForm.title.trim(), note: taskForm.note, checklist: cl, tools: taskForm.tools, dueDate: taskForm.dueDate, importance: taskForm.importance, status: taskForm.status, doneAt: taskForm.status === "done" && t.status !== "done" ? Date.now() : t.doneAt } : t) };
+    } else {
+      u = { ...data, tasks: [...tasks, { id: uid(), title: taskForm.title.trim(), note: taskForm.note, checklist: cl, tools: taskForm.tools, dueDate: taskForm.dueDate, importance: taskForm.importance, catId: taskForm.catId || null, subId: taskForm.subId || null, status: "todo", doneAt: null }] };
+    }
+    persist(u); setTaskModal(false);
+  };
+  const deleteTask = id => { persist({ ...data, tasks: tasks.filter(t => t.id !== id) }); setTaskModal(false); };
+  const moveTask = (taskId, newStatus) => {
+    persist({ ...data, tasks: tasks.map(t => t.id === taskId ? { ...t, status: newStatus, doneAt: newStatus === "done" ? Date.now() : t.doneAt } : t) });
+  };
+
+  /* Checklist form helpers */
+  const addCheckItem = () => { const txt = (taskForm.newCheckItem || "").trim(); if (!txt) return; setTaskForm({ ...taskForm, checklist: [...taskForm.checklist, { id: uid(), text: txt, done: false }], newCheckItem: "" }); };
+  const removeCheckItem = (itemId) => setTaskForm({ ...taskForm, checklist: taskForm.checklist.filter(c => c.id !== itemId) });
+  const toggleCheckItemForm = (itemId) => setTaskForm({ ...taskForm, checklist: taskForm.checklist.map(c => c.id === itemId ? { ...c, done: !c.done } : c) });
+  const editCheckItemText = (itemId, text) => setTaskForm({ ...taskForm, checklist: taskForm.checklist.map(c => c.id === itemId ? { ...c, text } : c) });
+
+  /* Tool CRUD */
+  const saveTool = () => { if (!toolForm.name.trim()) return; let nt; if (toolForm.editId) nt = tools.map(t => t.id === toolForm.editId ? { ...t, name: toolForm.name.trim() } : t); else nt = [...tools, { id: uid(), name: toolForm.name.trim() }]; persist({ ...data, tools: nt }); setToolForm({ name: "", editId: null }); };
+  const deleteTool = id => { persist({ ...data, tools: tools.filter(t => t.id !== id), tasks: tasks.map(t => ({ ...t, tools: (t.tools || []).filter(x => x !== id) })) }); };
+
+  /* Computed */
+  const uncatTasks = tasks.filter(t => !t.catId);
+  const uncatTodo = sortByImportance(uncatTasks.filter(t => t.status === "todo"));
+  const uncatDoing = sortByImportance(uncatTasks.filter(t => t.status === "doing"));
+  const uncatDone = sortByDoneOrder(uncatTasks.filter(t => t.status === "done"));
+  const getFiltered = () => { if (!activeCat) return []; return tasks.filter(t => t.catId === activeCatId && (activeSubId ? t.subId === activeSubId : true)); };
+  const filtered = getFiltered();
+  const catTodo = sortByImportance(filtered.filter(t => t.status === "todo"));
+  const catDoing = sortByImportance(filtered.filter(t => t.status === "doing"));
+  const catDone = sortByDoneOrder(filtered.filter(t => t.status === "done"));
+  const pieSegments = [ ...cats.map(c => ({ label: c.name, value: tasks.filter(t => t.catId === c.id && t.status !== "done").length, color: c.color })), ...(uncatTasks.filter(t => t.status !== "done").length > 0 ? [{ label: "Rapides", value: uncatTasks.filter(t => t.status !== "done").length, color: "#ccc" }] : []) ];
+
+  const openTaskEdit = t => { setTaskForm({ title: t.title, note: t.note || "", checklist: (t.checklist || []).map(c => ({...c})), newCheckItem: "", tools: t.tools || [], dueDate: t.dueDate || "", importance: t.importance || 3, editId: t.id, catId: t.catId, subId: t.subId, status: t.status }); setTaskModal(true); };
+  const newTaskForm = (catId, subId) => ({ ...emptyTaskForm(), catId: catId || null, subId: subId || null });
+
+  /* Styles (themed) */
+  const F = "'Nunito', sans-serif";
+  const btnP = { background: T.btnPrimBg, color: T.btnPrimText, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: F, transition: "all .2s" };
+  const btnG = { background: T.btnGhostBg, color: T.btnGhostText, border: "1px solid " + T.borderMed, borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: F };
+  const inp = { width: "100%", background: T.inputBg, border: "1px solid " + T.borderStrong, borderRadius: 10, padding: "11px 14px", color: T.inputText, fontSize: 14, fontWeight: 600, outline: "none", fontFamily: F, boxSizing: "border-box" };
+  const lbl = { fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6 };
+
+  /* Dynamic focus style */
+  const focusCSS = `input:focus,textarea:focus{border-color:${T.focusBorder}!important;box-shadow:${T.focusShadow}}`;
+
+  return h(ThemeCtx.Provider, { value: T },
+    h("div", { style: { minHeight: "100vh", background: T.bg, fontFamily: F, color: T.text, transition: "background .3s, color .3s" } },
+
+      h("style", null, focusCSS),
+
+      /* HEADER */
+      h("header", { style: { background: T.headerBg, borderBottom: "1px solid " + T.headerBorder, padding: "16px 28px", transition: "background .3s" } },
+        h("div", { style: { maxWidth: 1440, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } },
+          h("div", { style: { display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }, onClick: () => { setView("dashboard"); setActiveCatId(null); setActiveSubId(null); setSearchQuery(""); } },
+            h("div", { style: { width: 32, height: 32, borderRadius: 9, background: T.btnPrimBg, display: "flex", alignItems: "center", justifyContent: "center", color: T.btnPrimText, fontSize: 14, fontWeight: 900 } }, "T"),
+            h("h1", { style: { fontSize: 19, fontWeight: 900, letterSpacing: "-0.03em", color: T.text } }, "TaskFlow")
+          ),
+          /* Search bar */
+          h("div", { style: { position: "relative", flex: "0 1 320px", minWidth: 180 } },
+            h("input", {
+              value: searchQuery,
+              onChange: e => setSearchQuery(e.target.value),
+              placeholder: "\uD83D\uDD0D Rechercher une tache...",
+              style: { ...inp, padding: "9px 14px 9px 14px", fontSize: 13, borderRadius: 12, background: T.inputBg, width: "100%" }
+            }),
+            searchQuery.trim() && h("button", { onClick: () => setSearchQuery(""), style: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.textMuted, fontSize: 14, fontWeight: 700, fontFamily: F } }, "\u00D7")
+          ),
+          h("div", { style: { display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" } },
+            h("span", { style: { fontSize: 12, color: T.textMuted, fontWeight: 600, marginRight: 4 } }, new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })),
+            h(ThemeToggle, { dark, onToggle: toggleDark }),
+            view !== "dashboard" && h("button", { onClick: () => { setView("dashboard"); setActiveCatId(null); setActiveSubId(null); }, style: btnG }, "Tableau de bord"),
+            h("button", { onClick: () => setSettingsModal(true), style: btnG }, "Outils"),
+            h("button", { onClick: () => { setCatForm({ name: "", color: PASTEL_COLORS[0], editId: null }); setCatModal(true); }, style: btnG }, "+ Categorie"),
+            h("button", { onClick: () => { setTaskForm(emptyTaskForm()); setTaskModal(true); }, style: btnP }, "+ Tache rapide")
+          )
+        )
+      ),
+
+      h("div", { style: { maxWidth: 1440, margin: "0 auto", padding: "24px 28px" } },
+
+        /* SEARCH RESULTS */
+        searchQuery.trim() && (() => {
+          const q = searchQuery.trim().toLowerCase();
+          const results = tasks.filter(t => {
+            if (t.title.toLowerCase().includes(q)) return true;
+            if (t.note && t.note.toLowerCase().includes(q)) return true;
+            if (t.checklist && t.checklist.some(c => c.text.toLowerCase().includes(q))) return true;
+            return false;
+          });
+          const highlight = (text) => {
+            if (!text) return "";
+            const idx = text.toLowerCase().indexOf(q);
+            if (idx === -1) return text;
+            return [
+              text.slice(0, idx),
+              h("mark", { key: "hl", style: { background: dark ? "rgba(108,99,255,0.3)" : "rgba(26,26,46,0.12)", borderRadius: 2, padding: "0 1px", color: T.text } }, text.slice(idx, idx + q.length)),
+              text.slice(idx + q.length)
+            ];
+          };
+          return h("div", null,
+            h("div", { style: { ...lbl, fontSize: 12, marginBottom: 16 } }, results.length + " resultat" + (results.length > 1 ? "s" : "") + " pour \"" + searchQuery.trim() + "\""),
+            results.length === 0 && h("div", { style: { textAlign: "center", padding: "50px 20px" } },
+              h("div", { style: { fontSize: 32, marginBottom: 8 } }, "\uD83D\uDD0D"),
+              h("div", { style: { fontSize: 14, fontWeight: 700, color: T.textFaint } }, "Aucune tache trouvee")
+            ),
+            h("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+              ...results.map(task => {
+                const cat = task.catId ? getCat(task.catId) : null;
+                const sub = cat && task.subId ? cat.subs.find(s => s.id === task.subId) : null;
+                const matchInNote = task.note && task.note.toLowerCase().includes(q);
+                const matchInCheck = task.checklist && task.checklist.find(c => c.text.toLowerCase().includes(q));
+                return h("div", { key: task.id, onClick: () => { openTaskEdit(task); setSearchQuery(""); }, style: {
+                  display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                  background: T.card, borderRadius: 12, border: "1px solid " + T.border,
+                  borderLeft: "4px solid " + (cat ? cat.color : T.textGhost),
+                  cursor: "pointer", transition: "all .15s"
+                },
+                  onMouseEnter: e => { e.currentTarget.style.boxShadow = T.cardHover; e.currentTarget.style.transform = "translateY(-1px)"; },
+                  onMouseLeave: e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }
+                },
+                  /* Status dot */
+                  h("span", { style: { width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: task.status === "done" ? T.dotDone : task.status === "doing" ? T.dotDoing : T.dotTodo } }),
+                  /* Content */
+                  h("div", { style: { flex: 1, minWidth: 0 } },
+                    h("div", { style: { fontSize: 14, fontWeight: 700, color: task.status === "done" ? T.textFaint : T.text, textDecoration: task.status === "done" ? "line-through" : "none", lineHeight: 1.3 } }, highlight(task.title)),
+                    /* Breadcrumb */
+                    h("div", { style: { display: "flex", gap: 4, alignItems: "center", marginTop: 3, fontSize: 11, fontWeight: 600, color: T.textMuted } },
+                      cat ? h("span", null, cat.name) : h("span", null, "Rapide"),
+                      sub && h("span", null, " \u203A " + sub.name)
+                    ),
+                    /* Match context */
+                    matchInNote && h("div", { style: { fontSize: 11, color: T.textSoft, marginTop: 3, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } },
+                      "\uD83D\uDCDD ", highlight(task.note.length > 80 ? task.note.slice(0, 80) + "..." : task.note)
+                    ),
+                    matchInCheck && h("div", { style: { fontSize: 11, color: T.textSoft, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } },
+                      "\u2611 ", highlight(matchInCheck.text)
+                    )
+                  ),
+                  h("div", { style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 } },
+                    h(ImportanceBadge, { level: task.importance, small: true }),
+                    task.dueDate && h("span", { style: { fontSize: 10, fontWeight: 700, padding: "1px 8px", borderRadius: 5, background: T.tagBg, color: T.textMuted } }, new Date(task.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }))
+                  )
+                );
+              })
+            )
+          );
+        })(),
+
+        /* DASHBOARD (hidden when searching) */
+        !searchQuery.trim() && view === "dashboard" && h("div", { style: { display: "flex", gap: 24, alignItems: "flex-start" } },
+          /* Left: existing dashboard */
+          h("div", { style: { flex: 1, minWidth: 0 } },
+          h("div", { style: { display: "flex", gap: 20, marginBottom: 28, flexWrap: "wrap", alignItems: "flex-start" } },
+            h("div", { style: { background: T.card, borderRadius: 18, padding: "22px 26px", border: "1px solid " + T.border, flex: "0 0 auto", transition: "background .3s" } },
+              h("div", { style: { ...lbl, marginBottom: 14 } }, "Repartition"),
+              h("div", { style: { display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" } },
+                h(PieChart, { segments: pieSegments }),
+                h("div", { style: { display: "flex", flexDirection: "column", gap: 5 } },
+                  ...pieSegments.filter(s => s.value > 0).map((s, i) =>
+                    h("div", { key: i, style: { display: "flex", alignItems: "center", gap: 8 } },
+                      h("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color } }),
+                      h("span", { style: { fontSize: 12, fontWeight: 600, color: T.textSoft } }, s.label),
+                      h("span", { style: { fontSize: 11, fontWeight: 800, color: T.textFaint } }, s.value)
+                    )
+                  )
+                )
+              )
+            ),
+            h("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", flex: 1 } },
+              ...[
+                { l: "A faire", v: tasks.filter(t => t.status === "todo").length, c: T.dotTodo },
+                { l: "En cours", v: tasks.filter(t => t.status === "doing").length, c: T.dotDoing },
+                { l: "Termine", v: tasks.filter(t => t.status === "done").length, c: T.dotDone },
+              ].map(s =>
+                h("div", { key: s.l, style: { background: T.card, borderRadius: 16, padding: "16px 22px", border: "1px solid " + T.border, minWidth: 120, flex: "1 1 120px", transition: "background .3s" } },
+                  h("div", { style: { fontSize: 26, fontWeight: 900, color: s.c } }, s.v),
+                  h("div", { style: { fontSize: 12, fontWeight: 700, color: T.textMuted, marginTop: 2 } }, s.l)
+                )
+              ),
+              /* Pomodoro */
+              h(Pomodoro, { F })
+            )
+          ),
+
+          uncatTasks.length > 0 && h("div", { style: { marginBottom: 28 } },
+            h("div", { style: { ...lbl, fontSize: 12, marginBottom: 12 } }, "Taches rapides"),
+            h("div", { style: { display: "flex", flexDirection: "column", gap: 4 } },
+              ...[...sortByImportance(uncatTasks.filter(t => t.status !== "done")), ...sortByDoneOrder(uncatTasks.filter(t => t.status === "done"))].map(task =>
+                h("div", { key: task.id, style: {
+                  display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+                  background: task.status === "done" ? T.checkDoneBg : T.card,
+                  borderRadius: 10, border: "1px solid " + (task.status === "done" ? T.checkDoneBorder : T.border),
+                  cursor: "pointer", transition: "all .15s"
+                },
+                  onMouseEnter: e => { if (task.status !== "done") { e.currentTarget.style.boxShadow = T.cardHover; e.currentTarget.style.transform = "translateY(-1px)"; } },
+                  onMouseLeave: e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }
+                },
+                  /* Check circle */
+                  h("button", { onClick: e => { e.stopPropagation(); const next = task.status === "done" ? "todo" : "done"; moveTask(task.id, next); }, style: {
+                    width: 22, height: 22, borderRadius: 7, flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s",
+                    background: task.status === "done" ? "#4CAF7D" : task.status === "doing" ? "#E8A838" : T.checkBg,
+                    border: task.status === "done" ? "none" : task.status === "doing" ? "none" : "2px solid " + T.checkBorder,
+                    color: "#fff", fontSize: 12, fontWeight: 900
+                  } }, task.status === "done" ? "\u2713" : task.status === "doing" ? "\u25B6" : ""),
+                  /* Content */
+                  h("div", { style: { flex: 1, minWidth: 0, cursor: "pointer" }, onClick: () => openTaskEdit(task) },
+                    h("div", { style: { fontSize: 13, fontWeight: 700, color: task.status === "done" ? T.textFaint : T.text, textDecoration: task.status === "done" ? "line-through" : "none", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, task.title),
+                    (task.note || (task.checklist && task.checklist.length > 0)) && h("div", { style: { display: "flex", gap: 6, alignItems: "center", marginTop: 2 } },
+                      task.note && h("span", { style: { fontSize: 10, color: T.textFaint, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 } }, task.note),
+                      task.checklist && task.checklist.length > 0 && h(ChecklistProgress, { checklist: task.checklist })
+                    )
+                  ),
+                  /* Importance + status toggle + delete */
+                  h("div", { style: { display: "flex", alignItems: "center", gap: 5, flexShrink: 0 } },
+                    h(ImportanceBadge, { level: task.importance, small: true }),
+                    task.status !== "done" && h("button", { onClick: e => { e.stopPropagation(); moveTask(task.id, task.status === "doing" ? "todo" : "doing"); }, title: task.status === "doing" ? "Remettre a faire" : "En cours", style: {
+                      background: "none", border: "1px solid " + T.borderMed, borderRadius: 6, padding: "2px 7px", fontSize: 9, fontWeight: 800, cursor: "pointer", color: T.textMuted, fontFamily: F
+                    } }, task.status === "doing" ? "Pause" : "Go"),
+                    h("button", { onClick: e => { e.stopPropagation(); if (confirm("Supprimer cette tache ?")) deleteTask(task.id); }, title: "Supprimer", style: {
+                      background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 15, padding: "2px 4px", lineHeight: 1, transition: "color .15s"
+                    }, onMouseEnter: e => e.currentTarget.style.color = "#D94F4F", onMouseLeave: e => e.currentTarget.style.color = T.textFaint }, "\uD83D\uDDD1")
+                  )
+                )
+              )
+            )
+          ),
+
+          cats.length > 0 && h("div", null,
+            h("div", { style: { ...lbl, fontSize: 12, marginBottom: 12 } }, "Categories"),
+            h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } },
+              ...cats.map(cat => {
+                const ct = tasks.filter(t => t.catId === cat.id);
+                const pending = ct.filter(t => t.status !== "done").length;
+                const done = ct.filter(t => t.status === "done").length;
+                return h("div", {
+                  key: cat.id,
+                  onClick: () => { setActiveCatId(cat.id); setActiveSubId(null); setView("category"); },
+                  style: { background: T.card, borderRadius: 16, padding: "18px 20px", cursor: "pointer", border: "1px solid " + T.border, borderLeftWidth: 5, borderLeftColor: cat.color, borderLeftStyle: "solid", transition: "all .2s" },
+                  onMouseEnter: e => { e.currentTarget.style.boxShadow = T.cardHover; e.currentTarget.style.transform = "translateY(-2px)"; },
+                  onMouseLeave: e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }
+                },
+                  h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } },
+                    h("span", { style: { fontSize: 15, fontWeight: 800, color: T.text } }, cat.name),
+                    h("div", { style: { display: "flex", gap: 4 }, onClick: e => e.stopPropagation() },
+                      h("button", { onClick: () => { setCatForm({ name: cat.name, color: cat.color, editId: cat.id }); setCatModal(true); }, style: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: T.textFaint, padding: "3px 5px", borderRadius: 5, fontWeight: 700, fontFamily: F }, onMouseEnter: e => e.currentTarget.style.color = T.textSoft, onMouseLeave: e => e.currentTarget.style.color = T.textFaint }, "Editer"),
+                      h("button", { onClick: () => deleteCategory(cat.id), style: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: T.textFaint, padding: "3px 5px", borderRadius: 5, fontWeight: 700, fontFamily: F }, onMouseEnter: e => e.currentTarget.style.color = "#D94F4F", onMouseLeave: e => e.currentTarget.style.color = T.textFaint }, "Suppr.")
+                    )
+                  ),
+                  h("div", { style: { display: "flex", gap: 12, fontSize: 12, fontWeight: 700, marginBottom: cat.subs.length ? 8 : 0 } },
+                    h("span", { style: { color: T.textMuted } }, pending + " active" + (pending > 1 ? "s" : "")),
+                    h("span", { style: { color: T.textFaint } }, done + " terminee" + (done > 1 ? "s" : ""))
+                  ),
+                  cat.subs.length > 0 && h("div", { style: { display: "flex", gap: 5, flexWrap: "wrap" } },
+                    ...cat.subs.map(s => h("span", { key: s.id, style: { fontSize: 10, fontWeight: 700, padding: "2px 9px", borderRadius: 5, background: `${cat.color}22`, color: T.textSoft } }, s.num + ". " + s.name))
+                  )
+                );
+              })
+            )
+          ),
+
+          cats.length === 0 && uncatTasks.length === 0 && h("div", { style: { textAlign: "center", padding: "70px 20px" } },
+            h("div", { style: { fontSize: 38, fontWeight: 900, color: T.textGhost, marginBottom: 10 } }, "TaskFlow"),
+            h("div", { style: { fontSize: 15, fontWeight: 700, color: T.textFaint } }, "Creez une categorie ou une tache rapide pour commencer")
+          )
+          ),
+          /* Right: Day Planner */
+          h(DayPlanner, { tasks, cats, getCat, btnP, btnG, inp, lbl, F })
+        ),
+
+        /* CATEGORY KANBAN */
+        !searchQuery.trim() && view === "category" && activeCat && h("div", null,
+          h("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" } },
+            h("div", { style: { width: 14, height: 14, borderRadius: 5, background: activeCat.color } }),
+            h("h2", { style: { fontSize: 20, fontWeight: 900, letterSpacing: "-0.02em", color: T.text } }, activeCat.name),
+            h("div", { style: { marginLeft: "auto", display: "flex", gap: 7, flexWrap: "wrap" } },
+              h("button", { onClick: () => { setSubForm({ name: "", parentId: activeCatId, editId: null }); setSubModal(true); }, style: btnG }, "+ Sous-categorie"),
+              h("button", { onClick: () => { setTaskForm(newTaskForm(activeCatId, activeSubId)); setTaskModal(true); }, style: btnP }, "+ Tache")
+            )
+          ),
+          activeCat.subs.length > 0 && h("div", { style: { display: "flex", gap: 5, marginBottom: 18, flexWrap: "wrap", padding: 4, background: T.card, borderRadius: 12, border: "1px solid " + T.border } },
+            h("button", { onClick: () => setActiveSubId(null), style: { padding: "7px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: !activeSubId ? T.btnGhostBg : "transparent", color: !activeSubId ? T.text : T.textMuted, fontFamily: F } }, "Tout"),
+            ...activeCat.subs.map(s =>
+              h("div", { key: s.id, style: { display: "flex", alignItems: "center" } },
+                h("button", { onClick: () => setActiveSubId(s.id), style: { padding: "7px 12px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: activeSubId === s.id ? `${activeCat.color}20` : "transparent", color: activeSubId === s.id ? T.text : T.textMuted, fontFamily: F } }, s.num + ". " + s.name),
+                h("button", { onClick: () => { setSubForm({ name: s.name, parentId: activeCatId, editId: s.id }); setSubModal(true); }, style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 11, padding: "2px 3px", fontFamily: F, fontWeight: 700 } }, "edit"),
+                h("button", { onClick: () => deleteSubcategory(activeCatId, s.id), style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 11, padding: "2px 3px", fontFamily: F, fontWeight: 700 } }, "x")
+              )
+            )
+          ),
+          h("div", { style: { display: "flex", gap: 12 } },
+            h(KanbanCol, { status: "todo", label: "A faire", tasks: catTodo, tools, color: activeCat.color, onEdit: openTaskEdit, onDrop: moveTask }),
+            h(KanbanCol, { status: "doing", label: "En cours", tasks: catDoing, tools, color: activeCat.color, onEdit: openTaskEdit, onDrop: moveTask }),
+            h(KanbanCol, { status: "done", label: "Termine", tasks: catDone, tools, color: activeCat.color, onEdit: openTaskEdit, onDrop: moveTask })
+          )
+        )
+      ),
+
+      /* ═══ MODALS ═══ */
+
+      /* Category */
+      h(Modal, { open: catModal, onClose: () => setCatModal(false) },
+        h("h3", { style: { fontSize: 17, fontWeight: 900, marginBottom: 18, color: T.text } }, catForm.editId ? "Modifier la categorie" : "Nouvelle categorie"),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 14 } },
+          h("div", null, h("div", { style: lbl }, "Nom"), h("input", { value: catForm.name, onChange: e => setCatForm({ ...catForm, name: e.target.value }), onKeyDown: e => e.key === "Enter" && saveCategory(), placeholder: "Ex: Juridique annuel", style: inp, autoFocus: true })),
+          h("div", null, h("div", { style: lbl }, "Couleur"), h(ColorPicker, { value: catForm.color, onChange: c => setCatForm({ ...catForm, color: c }) })),
+          h("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 } },
+            h("button", { onClick: () => setCatModal(false), style: btnG }, "Annuler"),
+            h("button", { onClick: saveCategory, style: { ...btnP, opacity: catForm.name.trim() ? 1 : 0.35 } }, catForm.editId ? "Enregistrer" : "Creer")
+          )
+        )
+      ),
+
+      /* Subcategory */
+      h(Modal, { open: subModal, onClose: () => setSubModal(false) },
+        h("h3", { style: { fontSize: 17, fontWeight: 900, marginBottom: 18, color: T.text } }, subForm.editId ? "Modifier la sous-categorie" : "Nouvelle sous-categorie"),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 14 } },
+          h("div", null, h("div", { style: lbl }, "Nom"), h("input", { value: subForm.name, onChange: e => setSubForm({ ...subForm, name: e.target.value }), onKeyDown: e => e.key === "Enter" && saveSubcategory(), placeholder: "Ex: Constitution SCI", style: inp, autoFocus: true })),
+          h("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } },
+            h("button", { onClick: () => setSubModal(false), style: btnG }, "Annuler"),
+            h("button", { onClick: saveSubcategory, style: { ...btnP, opacity: subForm.name.trim() ? 1 : 0.35 } }, subForm.editId ? "Enregistrer" : "Creer")
+          )
+        )
+      ),
+
+      /* TASK MODAL */
+      h(Modal, { open: taskModal, onClose: () => setTaskModal(false), wide: true },
+        h("h3", { style: { fontSize: 17, fontWeight: 900, marginBottom: 18, color: T.text } }, taskForm.editId ? "Modifier la tache" : "Nouvelle tache"),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 14 } },
+          h("div", null, h("div", { style: lbl }, "Titre *"), h("input", { value: taskForm.title, onChange: e => setTaskForm({ ...taskForm, title: e.target.value }), placeholder: "Titre de la tache", style: inp, autoFocus: true })),
+
+          /* NOTE */
+          h("div", { style: { background: T.sectionBg, borderRadius: 12, padding: "14px 16px", border: "1px solid " + T.sectionBorder } },
+            h("div", { style: { ...lbl, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 } }, "\uD83D\uDCDD Note"),
+            h("textarea", { value: taskForm.note, onChange: e => setTaskForm({ ...taskForm, note: e.target.value }), placeholder: "Contexte, remarques, instructions...", rows: 3, style: { ...inp, resize: "vertical", background: T.card } })
+          ),
+
+          /* CHECKLIST */
+          h("div", { style: { background: T.sectionBg, borderRadius: 12, padding: "14px 16px", border: "1px solid " + T.sectionBorder } },
+            h("div", { style: { ...lbl, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 } },
+              "\u2611 To-do list",
+              taskForm.checklist.length > 0 && h("span", { style: { fontSize: 10, fontWeight: 700, color: T.textFaint, textTransform: "none", letterSpacing: 0 } },
+                "(" + taskForm.checklist.filter(c => c.done).length + "/" + taskForm.checklist.length + ")"
+              )
+            ),
+            taskForm.checklist.length > 0 && h("div", { style: { marginBottom: 10 } },
+              h("div", { style: { width: "100%", height: 5, borderRadius: 3, background: T.tagBg, overflow: "hidden" } },
+                h("div", { style: { width: (taskForm.checklist.length > 0 ? Math.round((taskForm.checklist.filter(c => c.done).length / taskForm.checklist.length) * 100) : 0) + "%", height: "100%", borderRadius: 3, background: taskForm.checklist.filter(c => c.done).length === taskForm.checklist.length ? "#4CAF7D" : "#E8A838", transition: "width .3s ease" } })
+              )
+            ),
+            taskForm.checklist.length > 0 && h("div", { style: { display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 } },
+              ...taskForm.checklist.map(item =>
+                h("div", { key: item.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: item.done ? T.checkDoneBg : T.card, borderRadius: 8, border: "1px solid " + (item.done ? T.checkDoneBorder : T.borderMed), transition: "all .15s" } },
+                  h("button", { onClick: () => toggleCheckItemForm(item.id), style: {
+                    width: 22, height: 22, borderRadius: 6, flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s",
+                    background: item.done ? "#4CAF7D" : T.checkBg, border: item.done ? "none" : "2px solid " + T.checkBorder, color: "#fff", fontSize: 12, fontWeight: 900
+                  } }, item.done ? "\u2713" : ""),
+                  h("input", { value: item.text, onChange: e => editCheckItemText(item.id, e.target.value), style: {
+                    flex: 1, border: "none", background: "transparent", outline: "none", fontFamily: F, fontSize: 13, fontWeight: 600,
+                    color: item.done ? T.textFaint : T.text, textDecoration: item.done ? "line-through" : "none"
+                  } }),
+                  h("button", { onClick: () => removeCheckItem(item.id), style: { background: "none", border: "none", cursor: "pointer", color: T.textFaint, fontSize: 18, fontWeight: 700, padding: "0 4px", lineHeight: 1, fontFamily: F },
+                    onMouseEnter: e => e.currentTarget.style.color = "#D94F4F",
+                    onMouseLeave: e => e.currentTarget.style.color = T.textFaint
+                  }, "\u00D7")
+                )
+              )
+            ),
+            h("div", { style: { display: "flex", gap: 6 } },
+              h("input", { value: taskForm.newCheckItem || "", onChange: e => setTaskForm({ ...taskForm, newCheckItem: e.target.value }),
+                onKeyDown: e => { if (e.key === "Enter") { e.preventDefault(); addCheckItem(); } },
+                placeholder: "Ajouter un element...", style: { ...inp, flex: 1, padding: "9px 12px", fontSize: 13, background: T.card }
+              }),
+              h("button", { onClick: addCheckItem, style: { ...btnG, padding: "9px 14px", fontSize: 13, whiteSpace: "nowrap" } }, "+ Ajouter")
+            )
+          ),
+
+          /* Importance */
+          h("div", null,
+            h("div", { style: lbl }, "Importance"),
+            h("div", { style: { display: "flex", gap: 6 } },
+              ...IMPORTANCE.map(i =>
+                h("button", { key: i.id, onClick: () => setTaskForm({ ...taskForm, importance: i.id }), style: {
+                  padding: "8px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F, border: "none", transition: "all .15s",
+                  background: taskForm.importance === i.id ? `${i.color}18` : T.btnGhostBg,
+                  color: taskForm.importance === i.id ? i.color : T.textMuted,
+                  boxShadow: taskForm.importance === i.id ? `0 0 0 2px ${i.color}40` : "none"
+                } }, i.label)
+              )
+            )
+          ),
+
+          taskForm.editId && h("div", null,
+            h("div", { style: lbl }, "Statut"),
+            h("div", { style: { display: "flex", gap: 6 } },
+              ...[{ id: "todo", l: "A faire" }, { id: "doing", l: "En cours" }, { id: "done", l: "Termine" }].map(s =>
+                h("button", { key: s.id, onClick: () => setTaskForm({ ...taskForm, status: s.id }), style: {
+                  padding: "8px 14px", borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F, border: "none",
+                  background: taskForm.status === s.id ? T.btnPrimBg : T.btnGhostBg,
+                  color: taskForm.status === s.id ? T.btnPrimText : T.textMuted
+                } }, s.l)
+              )
+            )
+          ),
+
+          cats.length > 0 && h("div", null,
+            h("div", { style: lbl }, "Categorie"),
+            h("select", { value: taskForm.catId || "", onChange: e => setTaskForm({ ...taskForm, catId: e.target.value || null, subId: null }), style: inp },
+              h("option", { value: "" }, "-- Tache rapide --"),
+              ...cats.map(c => h("option", { key: c.id, value: c.id }, c.name))
+            )
+          ),
+
+          (() => { const formCat = taskForm.catId ? getCat(taskForm.catId) : null; return formCat && formCat.subs.length > 0 ? h("div", null,
+            h("div", { style: lbl }, "Sous-categorie"),
+            h("select", { value: taskForm.subId || "", onChange: e => setTaskForm({ ...taskForm, subId: e.target.value || null }), style: inp },
+              h("option", { value: "" }, "-- Aucune --"),
+              ...formCat.subs.map(s => h("option", { key: s.id, value: s.id }, s.num + ". " + s.name))
+            )
+          ) : null; })(),
+
+          h("div", null, h("div", { style: lbl }, "Echeance (optionnel)"), h("input", { type: "date", value: taskForm.dueDate, onChange: e => setTaskForm({ ...taskForm, dueDate: e.target.value }), style: inp })),
+
+          h("div", null,
+            h("div", { style: lbl }, "Outils impliques (optionnel)"),
+            h("div", { style: { display: "flex", gap: 5, flexWrap: "wrap" } },
+              ...tools.map(t => {
+                const a = taskForm.tools.includes(t.id);
+                return h("button", { key: t.id, onClick: () => setTaskForm({ ...taskForm, tools: a ? taskForm.tools.filter(x => x !== t.id) : [...taskForm.tools, t.id] }), style: {
+                  padding: "7px 13px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F,
+                  background: a ? T.btnPrimBg : T.btnGhostBg, color: a ? T.btnPrimText : T.textSoft,
+                  border: a ? "none" : "1px solid " + T.borderMed, transition: "all .15s"
+                } }, t.name);
+              })
+            )
+          ),
+
+          h("div", { style: { display: "flex", gap: 8, justifyContent: "space-between", marginTop: 6 } },
+            h("div", null, taskForm.editId && h("button", { onClick: () => deleteTask(taskForm.editId), style: { ...btnG, color: "#D94F4F", borderColor: "rgba(217,79,79,0.25)" } }, "Supprimer")),
+            h("div", { style: { display: "flex", gap: 8 } },
+              h("button", { onClick: () => setTaskModal(false), style: btnG }, "Annuler"),
+              h("button", { onClick: saveTask, style: { ...btnP, opacity: taskForm.title.trim() ? 1 : 0.35 } }, taskForm.editId ? "Enregistrer" : "Creer")
+            )
+          )
+        )
+      ),
+
+      /* Tools Modal */
+      h(Modal, { open: settingsModal, onClose: () => setSettingsModal(false) },
+        h("h3", { style: { fontSize: 17, fontWeight: 900, marginBottom: 18, color: T.text } }, "Gestion des outils"),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 } },
+          ...tools.map(t =>
+            h("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: T.sectionBg, borderRadius: 9, border: "1px solid " + T.sectionBorder } },
+              h("span", { style: { flex: 1, fontSize: 14, fontWeight: 700, color: T.text } }, t.name),
+              h("button", { onClick: () => setToolForm({ name: t.name, editId: t.id }), style: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: T.textFaint, fontWeight: 700, fontFamily: F } }, "Editer"),
+              h("button", { onClick: () => deleteTool(t.id), style: { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#D94F4F", fontWeight: 700, fontFamily: F } }, "Suppr.")
+            )
+          ),
+          tools.length === 0 && h("div", { style: { fontSize: 13, color: T.textFaint, fontWeight: 600, padding: 8 } }, "Aucun outil configure")
+        ),
+        h("div", { style: { display: "flex", gap: 8 } },
+          h("input", { value: toolForm.name, onChange: e => setToolForm({ ...toolForm, name: e.target.value }), onKeyDown: e => e.key === "Enter" && saveTool(), placeholder: "Nom de l'outil", style: { ...inp, flex: 1 } }),
+          h("button", { onClick: saveTool, style: { ...btnP, whiteSpace: "nowrap" } }, toolForm.editId ? "Modifier" : "Ajouter")
+        ),
+        toolForm.editId && h("button", { onClick: () => setToolForm({ name: "", editId: null }), style: { ...btnG, marginTop: 8, width: "100%" } }, "Annuler la modification")
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
